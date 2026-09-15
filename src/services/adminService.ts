@@ -6,6 +6,7 @@ export type AdminPerfil = { id: string; nombre: string; rol: 'Administrador' | '
 export type MaterialInput = Omit<AdminMaterial, 'id'>
 export type MiembroInput = Omit<AdminMiembro, 'id'>
 export type PerfilInput = AdminPerfil
+export type TipoMaterial = { id: string; nombre: string }
 
 async function run(query: PromiseLike<{ error: { message: string } | null }>) {
   const { error } = await query
@@ -37,3 +38,15 @@ export const deleteMiembro = (id: string) => run(supabase.from('miembros').delet
 export const createPerfil = (input: PerfilInput) => run(supabase.from('perfiles').insert(input))
 export const updatePerfil = (id: string, input: Omit<PerfilInput, 'id'>) => run(supabase.from('perfiles').update(input).eq('id', id))
 export const deletePerfil = (id: string) => run(supabase.from('perfiles').delete().eq('id', id))
+
+export async function getTiposMaterial() {
+  const { data, error } = await supabase.from('tipos_material').select('id, nombre').order('nombre')
+  if (error) throw error
+  return (data ?? []) as TipoMaterial[]
+}
+
+export async function createTipoMaterial(nombre: string) {
+  const { data, error } = await supabase.from('tipos_material').insert({ nombre }).select('id, nombre').single()
+  if (error) throw error
+  return data as TipoMaterial
+}
