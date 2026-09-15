@@ -1,0 +1,8 @@
+# Secretos locales de las Edge Functions
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+secrets/
