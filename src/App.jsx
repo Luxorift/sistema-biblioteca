@@ -1,6 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { RoleRedirect } from './components/RoleRedirect'
+import { ThemeToggle } from './components/ui/ThemeToggle'
 import { AuthProvider } from './hooks/useAuth'
 import { AdminPage } from './pages/AdminPage'
 import { DashboardPage } from './pages/DashboardPage'
@@ -11,6 +12,7 @@ function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
+        <ThemeToggle />
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/recuperar-contrasena" element={<RecuperarPassword />} />
