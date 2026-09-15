@@ -1,10 +1,9 @@
 import { FormEvent, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { requestRecoveryCode, updatePasswordWithRecoveryCode, validateRecoveryCode } from '../services/supabase/recuperacion'
+import { requestRecoveryCode, resetPasswordWithRecoveryCode } from '../services/supabase/recuperacion'
 
 export function RecuperarPassword() {
   const [email, setEmail] = useState('')
-  const [perfilId, setPerfilId] = useState('')
   const [codigo, setCodigo] = useState('')
   const [nuevaPassword, setNuevaPassword] = useState('')
   const [step, setStep] = useState<1 | 2>(1)
@@ -19,8 +18,7 @@ export function RecuperarPassword() {
     setMessage('')
     setIsRequesting(true)
     try {
-      const result = await requestRecoveryCode(email.trim())
-      setPerfilId(result?.perfilId ?? '')
+      await requestRecoveryCode(email.trim())
       setStep(2)
       setMessage('Enviamos un código de 6 dígitos a su correo. Vence en 10 minutos.')
     } catch {
@@ -36,12 +34,7 @@ export function RecuperarPassword() {
     setMessage('')
     setIsLoading(true)
     try {
-      const isValid = await validateRecoveryCode(perfilId.trim(), codigo.trim())
-      if (!isValid) {
-        setError('El código no es válido, ya fue usado o venció. Solicite uno nuevo.')
-        return
-      }
-      await updatePasswordWithRecoveryCode(isValid, nuevaPassword)
+      await resetPasswordWithRecoveryCode(email.trim(), codigo.trim(), nuevaPassword)
       setMessage('La contraseña fue actualizada correctamente. Ya puede iniciar sesión.')
     } catch {
       setError('No pudimos validar el código o actualizar la contraseña. Inténtelo nuevamente.')
