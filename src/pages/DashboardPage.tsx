@@ -103,8 +103,8 @@ export function DashboardPage() {
           <Button type="submit" className="min-h-[56px] w-full text-lg md:w-auto">Buscar</Button>
         </form>
         {searchResults && <div className="mt-5 grid gap-5 md:grid-cols-2" aria-live="polite">
-          <SearchList title="Materiales encontrados" emptyMessage="No hay materiales que coincidan." items={searchResults.materiales.map((item) => <>{item.titulo} · {item.tipo} <StatusBadge estado={item.estado} /></>)} />
-          <SearchList title="Miembros encontrados" emptyMessage="No hay miembros que coincidan." items={searchResults.miembros.map((item) => <>{item.nombre_completo} · DNI/código: {item.codigo}</>)} />
+          <SearchList title="Materiales encontrados" emptyMessage="No hay materiales que coincidan." items={searchResults.materiales.map((item) => <>{item.titulo} · {item.tipo_material} <StatusBadge estado={item.estado} /></>)} />
+          <SearchList title="Miembros encontrados" emptyMessage="No hay miembros que coincidan." items={searchResults.miembros.map((item) => <>{item.nombre_completo} · DNI/código: {item.codigo_identificacion}</>)} />
         </div>}
       </Card>
 
@@ -115,8 +115,8 @@ export function DashboardPage() {
           <h2 id="prestamo-title" className="m-0 text-2xl font-bold">Nuevo préstamo</h2>
           <p className="mt-1 text-slate-700 dark:text-slate-300">Elija el material y la persona. Luego confirme con un solo botón.</p>
           <form className="mt-5 space-y-5" onSubmit={handleLoan}>
-            <Selection label="Material disponible" id="material" value={materialId} onChange={setMaterialId} placeholder="Seleccione un material" options={materiales.map((item) => ({ value: item.id, label: `${item.titulo} (${item.tipo})` }))} />
-            <Selection label="Miembro" id="miembro" value={miembroId} onChange={setMiembroId} placeholder="Seleccione un miembro" options={miembros.map((item) => ({ value: item.id, label: `${item.nombre_completo} — ${item.codigo}` }))} />
+            <Selection label="Material disponible" id="material" value={materialId} onChange={setMaterialId} placeholder="Seleccione un material" options={materiales.map((item) => ({ value: item.id, label: `${item.titulo} (${item.tipo_material})` }))} />
+            <Selection label="Miembro" id="miembro" value={miembroId} onChange={setMiembroId} placeholder="Seleccione un miembro" options={miembros.map((item) => ({ value: item.id, label: `${item.nombre_completo} — ${item.codigo_identificacion}` }))} />
             <Button type="submit" className="min-h-[56px] w-full text-xl" disabled={isSaving}>{isSaving ? 'Registrando préstamo…' : 'Registrar préstamo'}</Button>
           </form>
         </Card>
@@ -125,7 +125,7 @@ export function DashboardPage() {
           <h2 id="devoluciones-title" className="m-0 text-2xl font-bold">Devoluciones pendientes</h2>
           <p className="mt-1 text-slate-700 dark:text-slate-300">Préstamos activos que esperan devolución.</p>
           <div className="mt-5 space-y-4" aria-live="polite">
-            {prestamos.length === 0 ? <p className="rounded-lg bg-green-100 p-4 font-semibold text-green-800 dark:bg-green-900 dark:text-green-200">No hay devoluciones pendientes.</p> : prestamos.map((prestamo) => <article key={prestamo.id} className="rounded-lg border-2 border-slate-300 p-4 dark:border-slate-600"><h3 className="m-0 text-xl font-bold">{prestamo.materiales?.titulo ?? 'Material sin nombre'}</h3><p className="my-2 text-slate-700 dark:text-slate-300">Prestado a: <strong>{prestamo.miembros?.nombre_completo ?? 'Miembro sin nombre'}</strong> ({prestamo.miembros?.codigo ?? 'sin código'})</p><Button variant="secondary" className="min-h-[56px] w-full text-lg dark:border-blue-300 dark:bg-slate-700 dark:text-blue-200" onClick={() => handleReturn(prestamo)}>Marcar devuelto</Button></article>)}
+            {prestamos.length === 0 ? <p className="rounded-lg bg-green-100 p-4 font-semibold text-green-800 dark:bg-green-900 dark:text-green-200">No hay devoluciones pendientes.</p> : prestamos.map((prestamo) => <article key={prestamo.id} className="rounded-lg border-2 border-slate-300 p-4 dark:border-slate-600"><h3 className="m-0 text-xl font-bold">{prestamo.materiales?.titulo ?? 'Material sin nombre'}</h3><p className="my-2 text-slate-700 dark:text-slate-300">Prestado a: <strong>{prestamo.miembros?.nombre_completo ?? 'Miembro sin nombre'}</strong> ({prestamo.miembros?.codigo_identificacion ?? 'sin código'})</p><Button variant="secondary" className="min-h-[56px] w-full text-lg dark:border-blue-300 dark:bg-slate-700 dark:text-blue-200" onClick={() => handleReturn(prestamo)}>Marcar devuelto</Button></article>)}
           </div>
         </Card>
       </div>

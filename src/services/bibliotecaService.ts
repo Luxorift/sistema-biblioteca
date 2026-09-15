@@ -1,7 +1,7 @@
 import { supabase } from './supabase/client'
 
-export type Material = { id: string; titulo: string; tipo: string; estado: string; detalles_extra: Record<string, unknown> | null }
-export type Miembro = { id: string; nombre_completo: string; tipo: string; codigo: string; contacto: string | null }
+export type Material = { id: string; titulo: string; tipo_material: string; estado: string; detalles_extra: Record<string, unknown> | null; creado_en: string }
+export type Miembro = { id: string; nombre_completo: string; tipo_miembro: string; codigo_identificacion: string; contacto: string | null; creado_en: string }
 export type PrestamoActivo = {
   id: string
   material: string
@@ -9,13 +9,13 @@ export type PrestamoActivo = {
   estado: string
   fechas: Record<string, string> | null
   materiales: { titulo: string } | null
-  miembros: { nombre_completo: string; codigo: string } | null
+  miembros: { nombre_completo: string; codigo_identificacion: string } | null
 }
 
 export async function getMaterialesDisponibles() {
   const { data, error } = await supabase
     .from('materiales')
-    .select('id, titulo, tipo, estado, detalles_extra')
+    .select('id, titulo, tipo_material, estado, detalles_extra, creado_en')
     .eq('estado', 'Disponible')
     .order('titulo')
 
@@ -26,7 +26,7 @@ export async function getMaterialesDisponibles() {
 export async function getMateriales() {
   const { data, error } = await supabase
     .from('materiales')
-    .select('id, titulo, tipo, estado, detalles_extra')
+    .select('id, titulo, tipo_material, estado, detalles_extra, creado_en')
     .order('titulo')
 
   if (error) throw error
@@ -36,7 +36,7 @@ export async function getMateriales() {
 export async function getMiembros() {
   const { data, error } = await supabase
     .from('miembros')
-    .select('id, nombre_completo, tipo, codigo, contacto')
+    .select('id, nombre_completo, tipo_miembro, codigo_identificacion, contacto, creado_en')
     .order('nombre_completo')
 
   if (error) throw error
@@ -46,7 +46,7 @@ export async function getMiembros() {
 export async function getPrestamosActivos() {
   const { data, error } = await supabase
     .from('prestamos')
-    .select('id, material, miembro, estado, fechas, materiales(titulo), miembros(nombre_completo, codigo)')
+    .select('id, material, miembro, estado, fechas, materiales(titulo), miembros(nombre_completo, codigo_identificacion)')
     .eq('estado', 'Activo')
 
   if (error) throw error
@@ -65,7 +65,7 @@ export async function searchBiblioteca(searchTerm: string) {
       `${material.titulo} ${JSON.stringify(material.detalles_extra ?? {})}`.toLocaleLowerCase().includes(normalizedTerm),
     ),
     miembros: miembros.filter((miembro) =>
-      `${miembro.nombre_completo} ${miembro.codigo}`.toLocaleLowerCase().includes(normalizedTerm),
+      `${miembro.nombre_completo} ${miembro.codigo_identificacion}`.toLocaleLowerCase().includes(normalizedTerm),
     ),
   }
 }

@@ -1,10 +1,10 @@
 import { supabase } from './supabase/client'
 
-export type AdminMaterial = { id: string; titulo: string; tipo: string; estado: string; detalles_extra: Record<string, unknown> | null }
-export type AdminMiembro = { id: string; nombre_completo: string; tipo: string; codigo: string; contacto: string | null }
+export type AdminMaterial = { id: string; titulo: string; tipo_material: string; estado: string; detalles_extra: Record<string, unknown> | null; creado_en: string }
+export type AdminMiembro = { id: string; nombre_completo: string; tipo_miembro: string; codigo_identificacion: string; contacto: string | null; creado_en: string }
 export type AdminPerfil = { id: string; nombre: string; rol: 'Administrador' | 'Bibliotecario' }
-export type MaterialInput = Omit<AdminMaterial, 'id'>
-export type MiembroInput = Omit<AdminMiembro, 'id'>
+export type MaterialInput = Omit<AdminMaterial, 'id' | 'creado_en'>
+export type MiembroInput = Omit<AdminMiembro, 'id' | 'creado_en'>
 export type PerfilInput = AdminPerfil
 export type TipoMaterial = { id: string; nombre: string }
 
@@ -15,8 +15,8 @@ async function run(query: PromiseLike<{ error: { message: string } | null }>) {
 
 export async function getAdminData() {
   const [materialesResult, miembrosResult, perfilesResult] = await Promise.all([
-    supabase.from('materiales').select('id, titulo, tipo, estado, detalles_extra').order('titulo'),
-    supabase.from('miembros').select('id, nombre_completo, tipo, codigo, contacto').order('nombre_completo'),
+    supabase.from('materiales').select('id, titulo, tipo_material, estado, detalles_extra, creado_en').order('titulo'),
+    supabase.from('miembros').select('id, nombre_completo, tipo_miembro, codigo_identificacion, contacto, creado_en').order('nombre_completo'),
     supabase.from('perfiles').select('id, nombre, rol').order('nombre'),
   ])
   if (materialesResult.error) throw materialesResult.error
