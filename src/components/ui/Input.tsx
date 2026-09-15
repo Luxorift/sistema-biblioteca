@@ -17,7 +17,7 @@ export const Input = forwardRef<HTMLInputElement, Props>(function Input(
         ref={ref}
         id={id}
         aria-describedby={helpId}
-        className={`min-h-touch w-full rounded-lg border-2 border-slate-700 bg-white px-4 py-3 text-lg ${className}`}
+        className={`min-h-touch w-full rounded-lg border-2 border-slate-700 bg-white px-4 py-3 text-lg dark:border-slate-600 dark:bg-slate-700 dark:text-white ${className}`}
         {...props}
       />
       {helpText && <p id={helpId} className="mt-2 text-base text-slate-700">{helpText}</p>}
