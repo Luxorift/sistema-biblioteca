@@ -3,6 +3,7 @@ import { ComingSoonPage } from '@/components/feedback/ComingSoonPage'
 import { AppShell } from '@/components/layout/AppShell'
 import { LoginPage, RequireAuth } from '@/features/auth'
 import { HomePage } from '@/features/home'
+import { AgregarMaterialPage } from '@/features/materiales'
 import { NotFoundPage } from './NotFoundPage'
 
 // Mapa de toda la app. Cada ruta apunta a una página; las páginas viven en src/features/*.
@@ -20,7 +21,7 @@ export const router = createBrowserRouter([
           { path: 'buscar', element: <ComingSoonPage titulo="Buscar material" /> },
           { path: 'prestar', element: <ComingSoonPage titulo="Prestar" /> },
           { path: 'devolver', element: <ComingSoonPage titulo="Devolver" /> },
-          { path: 'agregar', element: <ComingSoonPage titulo="Agregar material" /> },
+          { path: 'agregar', element: <AgregarMaterialPage /> },
         ],
       },
     ],
