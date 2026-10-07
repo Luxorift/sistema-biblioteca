@@ -6,10 +6,18 @@ interface DialogProps {
   abierto: boolean
   titulo: string
   onCerrar: () => void
+  /** Más ancho para formularios largos (editar material, etc.). */
+  anchoAmplio?: boolean
   children: ReactNode
 }
 
-export function Dialog({ abierto, titulo, onCerrar, children }: DialogProps) {
+export function Dialog({
+  abierto,
+  titulo,
+  onCerrar,
+  anchoAmplio = false,
+  children,
+}: DialogProps) {
   const tituloId = useId()
   const dialogo = useRef<HTMLDialogElement>(null)
   useEffect(() => {
@@ -27,7 +35,7 @@ export function Dialog({ abierto, titulo, onCerrar, children }: DialogProps) {
         evento.preventDefault()
         onCerrar()
       }}
-      className="border-borde bg-papel text-tinta backdrop:bg-tinta/50 m-auto w-[calc(100%-2rem)] max-w-lg rounded-2xl border-2 p-0"
+      className={`border-borde bg-papel text-tinta backdrop:bg-tinta/50 m-auto w-[calc(100%-2rem)] rounded-2xl border-2 p-0 ${anchoAmplio ? 'max-w-3xl' : 'max-w-lg'}`}
     >
       <div className="border-borde flex items-center justify-between border-b-2 p-5">
         <h2 id={tituloId} className="text-2xl font-bold">
