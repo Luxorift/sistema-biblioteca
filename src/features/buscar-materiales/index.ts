@@ -1,0 +1,1 @@
+export { BuscarMaterialPage } from './BuscarMaterialPage'
