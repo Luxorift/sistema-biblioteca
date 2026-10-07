@@ -63,13 +63,13 @@ export function FormularioMaterial({
         </div>
         <div className="space-y-2">
           <Select
-            label="Categoría (opcional)"
+            label="Área o categoría (opcional)"
             disabled={cargandoCatalogos}
             {...register('categoriaId', {
               setValueAs: (valor) => (valor ? Number(valor) : null),
             })}
           >
-            <option value="">Sin categoría</option>
+            <option value="">Sin área o categoría</option>
             {categorias.map((categoria) => (
               <option key={categoria.id} value={categoria.id}>
                 {categoria.nombre}
@@ -77,7 +77,7 @@ export function FormularioMaterial({
             ))}
           </Select>
           <Button variante="secundario" onClick={() => onNuevo('categorias')}>
-            Agregar nueva categoría
+            Agregar nueva área o categoría
           </Button>
         </div>
       </div>
