@@ -1,8 +1,9 @@
-import { UserPlus } from 'lucide-react'
+import { ArrowLeft, UserPlus } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Alert } from '@/components/ui/Alert'
 import { Button } from '@/components/ui/Button'
+import { IndicadorCarga } from '@/components/feedback'
 import { useAuth } from '@/features/auth'
 import { CrearUsuarioDialog } from './components/CrearUsuarioDialog'
 import { EditarUsuarioDialog } from './components/EditarUsuarioDialog'
@@ -41,8 +42,9 @@ export function UsuariosPage() {
         <div className="flex flex-wrap items-center gap-3">
           <Link
             to="/"
-            className="border-borde inline-flex min-h-12 items-center justify-center rounded-xl border-2 bg-white px-5 text-lg font-bold"
+            className="border-borde inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border-2 bg-white px-5 text-lg font-bold transition-all hover:bg-papel active:scale-[0.98]"
           >
+            <ArrowLeft aria-hidden size={20} />
             Volver al inicio
           </Link>
           <Button onClick={() => setModalCrearAbierto(true)}>
@@ -67,7 +69,10 @@ export function UsuariosPage() {
       )}
 
       {isLoading ? (
-        <p className="text-xl p-8">Cargando lista de usuarios…</p>
+        <IndicadorCarga
+          mensaje="Cargando lista de usuarios…"
+          subtexto="Obteniendo las cuentas registradas en el sistema bibliotecario."
+        />
       ) : usuarios.length === 0 ? (
         <section className="border-borde rounded-2xl border-2 bg-white p-8 text-center space-y-3">
           <p className="text-2xl font-bold">No hay usuarios registrados</p>

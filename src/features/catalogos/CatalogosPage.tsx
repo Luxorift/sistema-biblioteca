@@ -1,8 +1,9 @@
-import { Plus } from 'lucide-react'
+import { ArrowLeft, Plus } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Alert } from '@/components/ui/Alert'
 import { Button } from '@/components/ui/Button'
+import { IndicadorCarga } from '@/components/feedback'
 import { ConfirmarEliminarDialog } from './components/ConfirmarEliminarDialog'
 import { CrearEditarCatalogoDialog } from './components/CrearEditarCatalogoDialog'
 import { CrearEditarUbicacionDialog } from './components/CrearEditarUbicacionDialog'
@@ -144,8 +145,9 @@ export function CatalogosPage() {
         <div className="flex flex-wrap items-center gap-3">
           <Link
             to="/"
-            className="border-borde inline-flex min-h-12 items-center justify-center rounded-xl border-2 bg-white px-5 text-lg font-bold"
+            className="border-borde inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border-2 bg-white px-5 text-lg font-bold transition-all hover:bg-papel active:scale-[0.98]"
           >
+            <ArrowLeft aria-hidden size={20} />
             Volver al inicio
           </Link>
           <Button onClick={abrirCreacion}>
@@ -177,9 +179,9 @@ export function CatalogosPage() {
                 setErrorEliminar(null)
               }}
               aria-current={esActiva ? 'page' : undefined}
-              className={`min-h-12 rounded-xl px-4 py-2 text-lg font-bold transition-colors ${
+              className={`min-h-12 rounded-xl px-4 py-2 text-lg font-bold transition-colors cursor-pointer ${
                 esActiva
-                  ? 'bg-primario text-white'
+                  ? 'bg-primario text-white shadow-xs'
                   : 'bg-white text-tinta border-2 border-borde hover:bg-papel'
               }`}
             >
@@ -203,7 +205,10 @@ export function CatalogosPage() {
         )}
 
         {estaCargando ? (
-          <p className="text-xl p-6">Cargando registros…</p>
+          <IndicadorCarga
+            mensaje={`Cargando ${metaActual.titulo.toLowerCase()}…`}
+            subtexto="Preparando los elementos del catálogo escolar."
+          />
         ) : seccionActiva === 'ubicaciones' ? (
           <TablaUbicaciones
             ubicaciones={consultaUbicaciones.data ?? []}
