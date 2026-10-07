@@ -1,28 +1,28 @@
 import type { UseFormReturn } from 'react-hook-form'
 import { Button } from '@/components/ui/Button'
-import { TextField } from '@/components/ui/TextField'
+import { DatePicker } from '@/components/ui/DatePicker'
 import type { FormularioPrestamo } from '../schemas'
 import type { CopiaDisponible, PersonaPrestataria } from '../types'
 
 interface FormularioPrestamoProps {
   formulario: UseFormReturn<FormularioPrestamo>
   copias: CopiaDisponible[]
-  personas: PersonaPrestataria[]
   copiaSeleccionada: CopiaDisponible | null
   personaSeleccionada: PersonaPrestataria | null
   onElegirCopia: (copia: CopiaDisponible) => void
-  onElegirPersona: (persona: PersonaPrestataria) => void
+  onQuitarCopia: () => void
+  onQuitarPersona: () => void
   onEnviar: (datos: FormularioPrestamo) => void
   guardando: boolean
 }
 export function FormularioPrestamo({
   formulario,
   copias,
-  personas,
   copiaSeleccionada,
   personaSeleccionada,
   onElegirCopia,
-  onElegirPersona,
+  onQuitarCopia,
+  onQuitarPersona,
   onEnviar,
   guardando,
 }: FormularioPrestamoProps) {
@@ -36,18 +36,23 @@ export function FormularioPrestamo({
   return (
     <form noValidate onSubmit={handleSubmit(onEnviar)} className="space-y-6">
       <section className="space-y-3">
-        <h2 className="text-xl font-bold">1. Elige la copia</h2>
+        <h2 className="text-xl font-bold">3. Elige la copia</h2>
         {copiaSeleccionada ? (
-          <p className="bg-papel rounded-xl p-4">
-            <strong>{copiaSeleccionada.codigo}</strong> · {copiaSeleccionada.titulo}
-          </p>
+          <div className="bg-papel flex flex-wrap items-center justify-between gap-3 rounded-xl p-4">
+            <p>
+              <strong>{copiaSeleccionada.codigo}</strong> · {copiaSeleccionada.titulo}
+            </p>
+            <Button variante="peligro" onClick={onQuitarCopia}>
+              Quitar selección
+            </Button>
+          </div>
         ) : (
           <p className="text-tinta-suave">
-            Escribe código o título arriba y elige una opción.
+            Elige un material arriba y luego una de sus copias.
           </p>
         )}
         <div className="grid gap-2">
-          {copias.slice(0, 8).map((copia) => (
+          {copias.map((copia) => (
             <Button
               key={copia.id}
               variante="secundario"
@@ -64,53 +69,48 @@ export function FormularioPrestamo({
         )}
       </section>
       <section className="border-borde space-y-3 border-t-2 pt-5">
-        <h2 className="text-xl font-bold">2. Elige la persona</h2>
+        <h2 className="text-xl font-bold">4. Persona elegida</h2>
         {personaSeleccionada ? (
-          <p className="bg-papel rounded-xl p-4">
-            <strong>{personaSeleccionada.nombreCompleto}</strong> · DNI{' '}
-            {personaSeleccionada.dni}
-          </p>
-        ) : (
-          <p className="text-tinta-suave">
-            Escribe nombre o DNI arriba y elige una opción.
-          </p>
-        )}
-        <div className="grid gap-2">
-          {personas.slice(0, 8).map((persona) => (
-            <Button
-              key={persona.id}
-              variante="secundario"
-              className="justify-start text-left"
-              onClick={() => onElegirPersona(persona)}
-            >
-              {persona.nombreCompleto} · DNI {persona.dni} · {persona.tipo}
+          <div className="bg-papel flex flex-wrap items-center justify-between gap-3 rounded-xl p-4">
+            <p>
+              <strong>{personaSeleccionada.nombreCompleto}</strong> · DNI{' '}
+              {personaSeleccionada.dni}
+            </p>
+            <Button variante="peligro" onClick={onQuitarPersona}>
+              Quitar selección
             </Button>
-          ))}
-        </div>
+          </div>
+        ) : (
+          <p className="text-tinta-suave">Elige una persona desde la tabla de arriba.</p>
+        )}
         {errors.personaId && (
           <p className="text-peligro font-bold">{errors.personaId.message}</p>
         )}
       </section>
       <section className="border-borde space-y-4 border-t-2 pt-5">
-        <h2 className="text-xl font-bold">3. Fechas</h2>
-        <TextField
+        <h2 className="text-xl font-bold">5. Fechas</h2>
+        <DatePicker
           label="Fecha de préstamo"
-          type="date"
           max={new Date().toISOString().slice(0, 10)}
+          value={watch('fechaPrestamo')}
+          onChange={(valor) =>
+            formulario.setValue('fechaPrestamo', valor, { shouldValidate: true })
+          }
           error={errors.fechaPrestamo?.message}
-          {...register('fechaPrestamo')}
         />
         <label className="border-borde flex min-h-12 items-center gap-3 rounded-xl border-2 bg-white px-4 text-lg">
           <input type="checkbox" className="size-5" {...register('tieneFechaLimite')} />{' '}
           Este préstamo tiene fecha límite
         </label>
         {tieneFechaLimite ? (
-          <TextField
+          <DatePicker
             label="Fecha límite"
-            type="date"
             min={watch('fechaPrestamo')}
+            value={watch('fechaLimite')}
+            onChange={(valor) =>
+              formulario.setValue('fechaLimite', valor, { shouldValidate: true })
+            }
             error={errors.fechaLimite?.message}
-            {...register('fechaLimite')}
           />
         ) : (
           <p className="text-tinta-suave">

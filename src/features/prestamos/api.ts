@@ -176,14 +176,12 @@ export async function registrarPrestamo(
   copia: CopiaDisponible,
   persona: PersonaPrestataria,
 ): Promise<PrestamoConfirmado> {
-  const { error } = await supabase
-    .from('prestamos')
-    .insert({
-      ejemplar_id: datos.ejemplarId,
-      persona_id: datos.personaId,
-      fecha_prestamo: `${datos.fechaPrestamo}T12:00:00`,
-      fecha_limite: datos.tieneFechaLimite ? datos.fechaLimite : null,
-    })
+  const { error } = await supabase.from('prestamos').insert({
+    ejemplar_id: datos.ejemplarId,
+    persona_id: datos.personaId,
+    fecha_prestamo: `${datos.fechaPrestamo}T12:00:00`,
+    fecha_limite: datos.tieneFechaLimite ? datos.fechaLimite : null,
+  })
   if (error) throw error
   return {
     codigo: copia.codigo,

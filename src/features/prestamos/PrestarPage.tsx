@@ -226,14 +226,20 @@ export function PrestarPage() {
             <FormularioPrestamo
               formulario={formulario}
               copias={materialSeleccionado?.copias ?? []}
-              personas={[]}
               copiaSeleccionada={copiaSeleccionada}
               personaSeleccionada={personaSeleccionada}
               onElegirCopia={(copia) => {
                 setCopiaSeleccionada(copia)
                 formulario.setValue('ejemplarId', copia.id, { shouldValidate: true })
               }}
-              onElegirPersona={() => undefined}
+              onQuitarCopia={() => {
+                setCopiaSeleccionada(null)
+                formulario.setValue('ejemplarId', 0, { shouldValidate: true })
+              }}
+              onQuitarPersona={() => {
+                setPersonaSeleccionada(null)
+                formulario.setValue('personaId', 0, { shouldValidate: true })
+              }}
               onEnviar={setConfirmar}
               guardando={registrar.isPending}
             />
