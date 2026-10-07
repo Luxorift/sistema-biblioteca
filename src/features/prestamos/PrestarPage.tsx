@@ -14,18 +14,27 @@ import {
   usePersonasActivas,
   useRegistrarPrestamo,
 } from './usePrestamos'
-import type { PrestamoConfirmado } from './types'
+import type { CopiaDisponible, PersonaPrestataria, PrestamoConfirmado } from './types'
 
 export function PrestarPage() {
   const formulario = useForm<DatosFormulario>({
     resolver: zodResolver(esquemaPrestamo),
-    defaultValues: { ejemplarId: 0, personaId: 0, fechaLimite: '' },
+    defaultValues: {
+      ejemplarId: 0,
+      personaId: 0,
+      fechaPrestamo: new Date().toISOString().slice(0, 10),
+      tieneFechaLimite: false,
+      fechaLimite: '',
+    },
   })
   const copias = useCopiasDisponibles()
   const personas = usePersonasActivas()
   const registrar = useRegistrarPrestamo()
   const [buscarCopia, setBuscarCopia] = useState('')
   const [buscarPersona, setBuscarPersona] = useState('')
+  const [copiaSeleccionada, setCopiaSeleccionada] = useState<CopiaDisponible | null>(null)
+  const [personaSeleccionada, setPersonaSeleccionada] =
+    useState<PersonaPrestataria | null>(null)
   const [confirmar, setConfirmar] = useState<DatosFormulario | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [resumen, setResumen] = useState<PrestamoConfirmado | null>(null)
@@ -73,6 +82,8 @@ export function PrestarPage() {
     setResumen(null)
     setBuscarCopia('')
     setBuscarPersona('')
+    setCopiaSeleccionada(null)
+    setPersonaSeleccionada(null)
   }
   if (resumen) return <ResumenPrestamo prestamo={resumen} onOtro={reiniciar} />
   return (
@@ -124,8 +135,18 @@ export function PrestarPage() {
           )}
           <FormularioPrestamo
             formulario={formulario}
-            copias={copiasFiltradas}
-            personas={personasFiltradas}
+            copias={buscarCopia.trim() ? copiasFiltradas : []}
+            personas={buscarPersona.trim() ? personasFiltradas : []}
+            copiaSeleccionada={copiaSeleccionada}
+            personaSeleccionada={personaSeleccionada}
+            onElegirCopia={(copia) => {
+              setCopiaSeleccionada(copia)
+              formulario.setValue('ejemplarId', copia.id, { shouldValidate: true })
+            }}
+            onElegirPersona={(persona) => {
+              setPersonaSeleccionada(persona)
+              formulario.setValue('personaId', persona.id, { shouldValidate: true })
+            }}
             onEnviar={setConfirmar}
             guardando={registrar.isPending}
           />

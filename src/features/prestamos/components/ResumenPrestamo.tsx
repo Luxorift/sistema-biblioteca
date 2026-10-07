@@ -29,8 +29,12 @@ export function ResumenPrestamo({
           <dd>{prestamo.persona}</dd>
         </div>
         <div>
+          <dt className="font-bold">Fecha de préstamo</dt>
+          <dd>{prestamo.fechaPrestamo}</dd>
+        </div>
+        <div>
           <dt className="font-bold">Fecha límite</dt>
-          <dd>{prestamo.fechaLimite ?? 'No indicada'}</dd>
+          <dd>{prestamo.fechaLimite ?? 'Sin fecha límite'}</dd>
         </div>
       </dl>
       <div className="flex flex-wrap gap-3">

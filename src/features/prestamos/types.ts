@@ -15,6 +15,8 @@ export interface PersonaPrestataria {
 export interface DatosPrestamo {
   ejemplarId: number
   personaId: number
+  fechaPrestamo: string
+  tieneFechaLimite: boolean
   fechaLimite: string
 }
 
@@ -22,5 +24,6 @@ export interface PrestamoConfirmado {
   codigo: string
   titulo: string
   persona: string
+  fechaPrestamo: string
   fechaLimite: string | null
 }
