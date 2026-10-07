@@ -20,13 +20,13 @@ export function useRegistrarPrestamo() {
   return useMutation({
     mutationFn: ({
       datos,
-      copia,
+      copias,
       persona,
     }: {
       datos: DatosPrestamo
-      copia: CopiaDisponible
+      copias: CopiaDisponible[]
       persona: PersonaPrestataria
-    }) => registrarPrestamo(datos, copia, persona),
+    }) => registrarPrestamo(datos, copias, persona),
     onSuccess: () => {
       cliente.invalidateQueries({ queryKey: ['ejemplares'] })
       cliente.invalidateQueries({ queryKey: ['materiales'] })

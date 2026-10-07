@@ -1,16 +1,17 @@
 import type { UseFormReturn } from 'react-hook-form'
 import { Button } from '@/components/ui/Button'
 import { DatePicker } from '@/components/ui/DatePicker'
+import { TextField } from '@/components/ui/TextField'
 import type { FormularioPrestamo } from '../schemas'
 import type { CopiaDisponible, PersonaPrestataria } from '../types'
 
 interface FormularioPrestamoProps {
   formulario: UseFormReturn<FormularioPrestamo>
   copias: CopiaDisponible[]
-  copiaSeleccionada: CopiaDisponible | null
+  copiasSeleccionadas: CopiaDisponible[]
   personaSeleccionada: PersonaPrestataria | null
-  onElegirCopia: (copia: CopiaDisponible) => void
-  onQuitarCopia: () => void
+  onAlternarCopia: (copia: CopiaDisponible) => void
+  onQuitarMaterial: () => void
   onQuitarPersona: () => void
   onEnviar: (datos: FormularioPrestamo) => void
   guardando: boolean
@@ -18,10 +19,10 @@ interface FormularioPrestamoProps {
 export function FormularioPrestamo({
   formulario,
   copias,
-  copiaSeleccionada,
+  copiasSeleccionadas,
   personaSeleccionada,
-  onElegirCopia,
-  onQuitarCopia,
+  onAlternarCopia,
+  onQuitarMaterial,
   onQuitarPersona,
   onEnviar,
   guardando,
@@ -33,39 +34,47 @@ export function FormularioPrestamo({
     formState: { errors },
   } = formulario
   const tieneFechaLimite = watch('tieneFechaLimite')
+  const cantidad = watch('cantidad')
+  const seleccionados = new Set(copiasSeleccionadas.map((copia) => copia.id))
   return (
     <form noValidate onSubmit={handleSubmit(onEnviar)} className="space-y-6">
       <section className="space-y-3">
-        <h2 className="text-xl font-bold">3. Elige la copia</h2>
-        {copiaSeleccionada ? (
-          <div className="bg-papel flex flex-wrap items-center justify-between gap-3 rounded-xl p-4">
-            <p>
-              <strong>{copiaSeleccionada.codigo}</strong> · {copiaSeleccionada.titulo}
-            </p>
-            <Button variante="peligro" onClick={onQuitarCopia}>
-              Quitar selección
-            </Button>
+        <h2 className="text-xl font-bold">3. Elige las copias</h2>
+        <div className="flex flex-wrap items-end gap-4">
+          <div className="w-full max-w-xs">
+            <TextField
+              label="Cantidad de copias a prestar"
+              type="number"
+              min="1"
+              max={copias.length || 1}
+              error={errors.cantidad?.message}
+              {...register('cantidad', { setValueAs: (valor) => Number(valor) })}
+            />
           </div>
-        ) : (
           <p className="text-tinta-suave">
-            Elige un material arriba y luego una de sus copias.
+            Disponibles: {copias.length}. Seleccionadas: {copiasSeleccionadas.length} de{' '}
+            {cantidad}.
           </p>
-        )}
+          <Button variante="peligro" onClick={onQuitarMaterial}>
+            Quitar material y copias
+          </Button>
+        </div>
         <div className="grid gap-2">
           {copias.map((copia) => (
             <Button
               key={copia.id}
-              variante="secundario"
+              variante={seleccionados.has(copia.id) ? 'primario' : 'secundario'}
               className="justify-start text-left"
-              onClick={() => onElegirCopia(copia)}
+              onClick={() => onAlternarCopia(copia)}
             >
+              {seleccionados.has(copia.id) ? 'Seleccionada: ' : 'Elegir: '}
               {copia.codigo} · {copia.titulo}
               {copia.ubicacion ? ` · ${copia.ubicacion}` : ''}
             </Button>
           ))}
         </div>
-        {errors.ejemplarId && (
-          <p className="text-peligro font-bold">{errors.ejemplarId.message}</p>
+        {errors.ejemplarIds && (
+          <p className="text-peligro font-bold">{errors.ejemplarIds.message}</p>
         )}
       </section>
       <section className="border-borde space-y-3 border-t-2 pt-5">

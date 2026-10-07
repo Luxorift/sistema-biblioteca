@@ -26,7 +26,8 @@ export function PrestarPage() {
   const formulario = useForm<DatosFormulario>({
     resolver: zodResolver(esquemaPrestamo),
     defaultValues: {
-      ejemplarId: 0,
+      ejemplarIds: [],
+      cantidad: 1,
       personaId: 0,
       fechaPrestamo: hoy,
       tieneFechaLimite: false,
@@ -40,7 +41,7 @@ export function PrestarPage() {
   const [filtroPersona, setFiltroPersona] = useState('')
   const [materialSeleccionado, setMaterialSeleccionado] =
     useState<MaterialPrestable | null>(null)
-  const [copiaSeleccionada, setCopiaSeleccionada] = useState<CopiaDisponible | null>(null)
+  const [copiasSeleccionadas, setCopiasSeleccionadas] = useState<CopiaDisponible[]>([])
   const [personaSeleccionada, setPersonaSeleccionada] =
     useState<PersonaPrestataria | null>(null)
   const [confirmar, setConfirmar] = useState<DatosFormulario | null>(null)
@@ -66,11 +67,11 @@ export function PrestarPage() {
   )
   const elegirMaterial = (material: MaterialPrestable) => {
     setMaterialSeleccionado(material)
-    setCopiaSeleccionada(null)
-    formulario.setValue('ejemplarId', 0)
+    setCopiasSeleccionadas([])
+    formulario.setValue('ejemplarIds', [])
   }
   const guardar = async (datos: DatosFormulario) => {
-    if (!copiaSeleccionada || !personaSeleccionada) {
+    if (!copiasSeleccionadas.length || !personaSeleccionada) {
       setError('Elige una copia y una persona antes de continuar.')
       setConfirmar(null)
       return
@@ -80,7 +81,7 @@ export function PrestarPage() {
       setResumen(
         await registrar.mutateAsync({
           datos,
-          copia: copiaSeleccionada,
+          copias: copiasSeleccionadas,
           persona: personaSeleccionada,
         }),
       )
@@ -94,14 +95,15 @@ export function PrestarPage() {
   }
   const reiniciar = () => {
     formulario.reset({
-      ejemplarId: 0,
+      ejemplarIds: [],
+      cantidad: 1,
       personaId: 0,
       fechaPrestamo: hoy,
       tieneFechaLimite: false,
       fechaLimite: '',
     })
     setMaterialSeleccionado(null)
-    setCopiaSeleccionada(null)
+    setCopiasSeleccionadas([])
     setPersonaSeleccionada(null)
     setResumen(null)
   }
@@ -226,15 +228,26 @@ export function PrestarPage() {
             <FormularioPrestamo
               formulario={formulario}
               copias={materialSeleccionado?.copias ?? []}
-              copiaSeleccionada={copiaSeleccionada}
+              copiasSeleccionadas={copiasSeleccionadas}
               personaSeleccionada={personaSeleccionada}
-              onElegirCopia={(copia) => {
-                setCopiaSeleccionada(copia)
-                formulario.setValue('ejemplarId', copia.id, { shouldValidate: true })
+              onAlternarCopia={(copia) => {
+                const yaSeleccionada = copiasSeleccionadas.some(
+                  (fila) => fila.id === copia.id,
+                )
+                const nuevas = yaSeleccionada
+                  ? copiasSeleccionadas.filter((fila) => fila.id !== copia.id)
+                  : [...copiasSeleccionadas, copia]
+                setCopiasSeleccionadas(nuevas)
+                formulario.setValue(
+                  'ejemplarIds',
+                  nuevas.map((fila) => fila.id),
+                  { shouldValidate: true },
+                )
               }}
-              onQuitarCopia={() => {
-                setCopiaSeleccionada(null)
-                formulario.setValue('ejemplarId', 0, { shouldValidate: true })
+              onQuitarMaterial={() => {
+                setMaterialSeleccionado(null)
+                setCopiasSeleccionadas([])
+                formulario.setValue('ejemplarIds', [], { shouldValidate: true })
               }}
               onQuitarPersona={() => {
                 setPersonaSeleccionada(null)

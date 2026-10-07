@@ -173,19 +173,23 @@ export async function obtenerPersonasActivas(): Promise<PersonaPrestataria[]> {
 
 export async function registrarPrestamo(
   datos: DatosPrestamo,
-  copia: CopiaDisponible,
+  copias: CopiaDisponible[],
   persona: PersonaPrestataria,
 ): Promise<PrestamoConfirmado> {
-  const { error } = await supabase.from('prestamos').insert({
-    ejemplar_id: datos.ejemplarId,
-    persona_id: datos.personaId,
-    fecha_prestamo: `${datos.fechaPrestamo}T12:00:00`,
-    fecha_limite: datos.tieneFechaLimite ? datos.fechaLimite : null,
-  })
+  const { error } = await supabase
+    .from('prestamos')
+    .insert(
+      copias.map((copia) => ({
+        ejemplar_id: copia.id,
+        persona_id: datos.personaId,
+        fecha_prestamo: `${datos.fechaPrestamo}T12:00:00`,
+        fecha_limite: datos.tieneFechaLimite ? datos.fechaLimite : null,
+      })),
+    )
   if (error) throw error
   return {
-    codigo: copia.codigo,
-    titulo: copia.titulo,
+    codigos: copias.map((copia) => copia.codigo),
+    titulo: copias[0]?.titulo ?? 'Material',
     persona: persona.nombreCompleto,
     fechaPrestamo: datos.fechaPrestamo,
     fechaLimite: datos.tieneFechaLimite ? datos.fechaLimite : null,

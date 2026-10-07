@@ -18,7 +18,7 @@ export function ResumenPrestamo({
       <dl className="grid gap-3 sm:grid-cols-2">
         <div>
           <dt className="font-bold">Copia</dt>
-          <dd>{prestamo.codigo}</dd>
+          <dd>{prestamo.codigos.join(', ')}</dd>
         </div>
         <div>
           <dt className="font-bold">Material</dt>

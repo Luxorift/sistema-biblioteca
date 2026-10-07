@@ -25,7 +25,8 @@ export interface PersonaPrestataria {
 }
 
 export interface DatosPrestamo {
-  ejemplarId: number
+  ejemplarIds: number[]
+  cantidad: number
   personaId: number
   fechaPrestamo: string
   tieneFechaLimite: boolean
@@ -33,7 +34,7 @@ export interface DatosPrestamo {
 }
 
 export interface PrestamoConfirmado {
-  codigo: string
+  codigos: string[]
   titulo: string
   persona: string
   fechaPrestamo: string
