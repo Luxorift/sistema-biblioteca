@@ -6,6 +6,13 @@ export function HomePage() {
   const { perfil } = useAuth()
   const primerNombre = perfil?.nombre.split(' ')[0]
 
+  const accionesPermitidas = accionesInicio.filter((accion) => {
+    if (accion.soloAdmin && perfil?.rol !== 'admin') {
+      return false
+    }
+    return true
+  })
+
   return (
     <div className="space-y-8">
       <div className="space-y-1">
@@ -14,7 +21,7 @@ export function HomePage() {
       </div>
 
       <div className="grid gap-5 sm:grid-cols-2">
-        {accionesInicio.map((accion) => (
+        {accionesPermitidas.map((accion) => (
           <ActionTile key={accion.id} accion={accion} />
         ))}
       </div>
