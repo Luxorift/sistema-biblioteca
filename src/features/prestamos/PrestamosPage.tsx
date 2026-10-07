@@ -1,4 +1,4 @@
-import { BookDown, BookUp, ClipboardList } from 'lucide-react'
+import { ArrowLeft, BookDown, BookUp, ClipboardList } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { DevolverPage } from '@/features/devoluciones'
 import { HistorialPrestamosPage } from './HistorialPrestamosPage'
@@ -26,7 +26,7 @@ export function PrestamosPage({ tabInicial }: Props) {
 
   return (
     <div className="space-y-6">
-      {/* Barra de pestañas unificada del mostrador */}
+      {/* Barra de pestañas unificada del mostrador con UN SOLO botón de volver al inicio */}
       <div className="border-b-2 border-borde pb-4">
         <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
           <div>
@@ -37,8 +37,9 @@ export function PrestamosPage({ tabInicial }: Props) {
           </div>
           <Link
             to="/"
-            className="border-borde inline-flex min-h-12 items-center justify-center rounded-xl border-2 bg-white px-5 text-lg font-bold"
+            className="border-borde inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border-2 bg-white px-5 text-lg font-bold transition-all hover:bg-papel active:scale-[0.98]"
           >
+            <ArrowLeft aria-hidden size={20} />
             Volver al inicio
           </Link>
         </div>
@@ -51,9 +52,9 @@ export function PrestamosPage({ tabInicial }: Props) {
             type="button"
             onClick={() => cambiarTab('devolver')}
             aria-current={tabActiva === 'devolver' ? 'page' : undefined}
-            className={`min-h-12 rounded-xl px-5 py-2.5 text-lg font-bold transition-colors inline-flex items-center gap-2 ${
+            className={`min-h-12 rounded-xl px-5 py-2.5 text-lg font-bold transition-colors inline-flex items-center gap-2 cursor-pointer ${
               tabActiva === 'devolver'
-                ? 'bg-primario text-white'
+                ? 'bg-primario text-white shadow-xs'
                 : 'bg-white text-tinta border-2 border-borde hover:bg-papel'
             }`}
           >
@@ -64,9 +65,9 @@ export function PrestamosPage({ tabInicial }: Props) {
             type="button"
             onClick={() => cambiarTab('prestar')}
             aria-current={tabActiva === 'prestar' ? 'page' : undefined}
-            className={`min-h-12 rounded-xl px-5 py-2.5 text-lg font-bold transition-colors inline-flex items-center gap-2 ${
+            className={`min-h-12 rounded-xl px-5 py-2.5 text-lg font-bold transition-colors inline-flex items-center gap-2 cursor-pointer ${
               tabActiva === 'prestar'
-                ? 'bg-primario text-white'
+                ? 'bg-primario text-white shadow-xs'
                 : 'bg-white text-tinta border-2 border-borde hover:bg-papel'
             }`}
           >
@@ -77,9 +78,9 @@ export function PrestamosPage({ tabInicial }: Props) {
             type="button"
             onClick={() => cambiarTab('historial')}
             aria-current={tabActiva === 'historial' ? 'page' : undefined}
-            className={`min-h-12 rounded-xl px-5 py-2.5 text-lg font-bold transition-colors inline-flex items-center gap-2 ${
+            className={`min-h-12 rounded-xl px-5 py-2.5 text-lg font-bold transition-colors inline-flex items-center gap-2 cursor-pointer ${
               tabActiva === 'historial'
-                ? 'bg-primario text-white'
+                ? 'bg-primario text-white shadow-xs'
                 : 'bg-white text-tinta border-2 border-borde hover:bg-papel'
             }`}
           >
@@ -89,10 +90,10 @@ export function PrestamosPage({ tabInicial }: Props) {
         </nav>
       </div>
 
-      {/* Contenido según la pestaña */}
-      {tabActiva === 'devolver' && <DevolverPage />}
-      {tabActiva === 'prestar' && <PrestarPage />}
-      {tabActiva === 'historial' && <HistorialPrestamosPage />}
+      {/* Contenido sin encabezado duplicado */}
+      {tabActiva === 'devolver' && <DevolverPage ocultarEncabezado />}
+      {tabActiva === 'prestar' && <PrestarPage ocultarEncabezado />}
+      {tabActiva === 'historial' && <HistorialPrestamosPage ocultarEncabezado />}
     </div>
   )
 }

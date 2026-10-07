@@ -1,7 +1,9 @@
+import { ArrowLeft, RotateCcw } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Alert } from '@/components/ui/Alert'
 import { Button } from '@/components/ui/Button'
+import { IndicadorCarga } from '@/components/feedback'
 import { Select } from '@/components/ui/Select'
 import { TextField } from '@/components/ui/TextField'
 import { EditarEjemplarDialog } from './components/EditarEjemplarDialog'
@@ -85,8 +87,9 @@ export function EjemplaresPage() {
         </div>
         <Link
           to="/"
-          className="border-borde inline-flex min-h-12 items-center justify-center rounded-xl border-2 bg-white px-5 text-lg font-bold"
+          className="border-borde inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border-2 bg-white px-5 text-lg font-bold transition-all hover:bg-papel active:scale-[0.98]"
         >
+          <ArrowLeft aria-hidden size={20} />
           Volver al inicio
         </Link>
       </div>
@@ -153,13 +156,19 @@ export function EjemplaresPage() {
           </Select>
         </div>
         <Button variante="secundario" onClick={limpiarFiltros}>
+          <RotateCcw aria-hidden size={18} />
           Limpiar filtros
         </Button>
       </section>
 
       {/* Lista de ejemplares */}
       <section className="space-y-4">
-        {isLoading && <p>Cargando copias físicas…</p>}
+        {isLoading && (
+          <IndicadorCarga
+            mensaje="Cargando copias físicas…"
+            subtexto="Consultando inventario de ejemplares, estantes y estados."
+          />
+        )}
 
         {!isLoading && filtrados.length === 0 && (
           <div className="border-borde rounded-2xl border-2 bg-white p-5">

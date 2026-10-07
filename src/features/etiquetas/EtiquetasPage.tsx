@@ -1,7 +1,9 @@
+import { ArrowLeft } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Alert } from '@/components/ui/Alert'
 import { Button } from '@/components/ui/Button'
+import { IndicadorCarga } from '@/components/feedback'
 import { EtiquetaImprimible } from './components/EtiquetaImprimible'
 import { FiltrosEtiquetas } from './components/FiltrosEtiquetas'
 import type { FormatoEtiqueta } from './types'
@@ -114,8 +116,9 @@ export function EtiquetasPage() {
         </div>
         <Link
           to="/"
-          className="border-borde inline-flex min-h-12 items-center justify-center rounded-xl border-2 bg-white px-5 text-lg font-bold"
+          className="border-borde inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border-2 bg-white px-5 text-lg font-bold transition-all hover:bg-papel active:scale-[0.98]"
         >
+          <ArrowLeft aria-hidden size={20} />
           Volver al inicio
         </Link>
       </header>
@@ -126,7 +129,14 @@ export function EtiquetasPage() {
         </Alert>
       )}
 
-      {isLoading && <p className="print:hidden">Cargando ejemplares físicos…</p>}
+      {isLoading && (
+        <div className="print:hidden">
+          <IndicadorCarga
+            mensaje="Cargando ejemplares para etiquetas…"
+            subtexto="Generando vistas de códigos de barra y QR."
+          />
+        </div>
+      )}
 
       {!isLoading && (
         <>

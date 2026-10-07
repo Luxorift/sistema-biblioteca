@@ -1,9 +1,11 @@
+import { ArrowLeft } from 'lucide-react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { Alert } from '@/components/ui/Alert'
 import { Button } from '@/components/ui/Button'
 import { Dialog } from '@/components/ui/Dialog'
+import { IndicadorCarga } from '@/components/feedback'
 import { useCatalogo, useEditoriales, useUbicaciones } from '@/features/catalogos'
 import { FormularioMaterial } from './components/FormularioMaterial'
 import { NuevoCatalogoDialog } from './components/NuevoCatalogoDialog'
@@ -16,7 +18,11 @@ import type { MaterialSimilar, ResumenMaterial } from './types'
 
 type Dialogo = 'tipos_material' | 'categorias' | 'ubicacion' | null
 
-export function AgregarMaterialPage() {
+interface AgregarMaterialPageProps {
+  ocultarEncabezado?: boolean
+}
+
+export function AgregarMaterialPage({ ocultarEncabezado = false }: AgregarMaterialPageProps) {
   const formulario = useForm<DatosFormulario>({
     resolver: zodResolver(esquemaMaterial),
     defaultValues: {
@@ -127,17 +133,26 @@ export function AgregarMaterialPage() {
   if (resumen) return <ResumenExito resumen={resumen} onOtro={reiniciar} />
   return (
     <div className="space-y-7">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold">Agregar material</h1>
-          <p className="text-tinta-suave text-xl">
-            Registra la ficha y las copias físicas que llegaron.
-          </p>
+      {!ocultarEncabezado && (
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold">Agregar material</h1>
+            <p className="text-tinta-suave text-xl">
+              Registra la ficha y las copias físicas que llegaron.
+            </p>
+          </div>
+          <Button variante="secundario" onClick={volverAlInicio}>
+            <ArrowLeft aria-hidden size={20} />
+            Volver al inicio
+          </Button>
         </div>
-        <Button variante="secundario" onClick={volverAlInicio}>
-          Volver al inicio
-        </Button>
-      </div>
+      )}
+      {cargandoCatalogos && (
+        <IndicadorCarga
+          mensaje="Cargando listas y catálogos…"
+          subtexto="Preparando opciones de tipos de libro, categorías y estantes."
+        />
+      )}
       {errorCatalogos && (
         <Alert>
           No se pudieron cargar las opciones. Recarga la página e intenta de nuevo.

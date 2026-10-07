@@ -1,3 +1,4 @@
+import { ArrowLeft, RotateCcw } from 'lucide-react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
@@ -5,6 +6,7 @@ import { Link } from 'react-router-dom'
 import { Alert } from '@/components/ui/Alert'
 import { Button } from '@/components/ui/Button'
 import { Dialog } from '@/components/ui/Dialog'
+import { IndicadorCarga } from '@/components/feedback'
 import { Select } from '@/components/ui/Select'
 import { TextField } from '@/components/ui/TextField'
 import { EditarPersonaDialog } from './components/EditarPersonaDialog'
@@ -110,8 +112,9 @@ export function PersonasPage() {
         </div>
         <Link
           to="/"
-          className="border-borde inline-flex min-h-12 items-center justify-center rounded-xl border-2 bg-white px-5 text-lg font-bold"
+          className="border-borde inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border-2 bg-white px-5 text-lg font-bold transition-all hover:bg-papel active:scale-[0.98]"
         >
+          <ArrowLeft aria-hidden size={20} />
           Volver al inicio
         </Link>
       </div>
@@ -172,11 +175,17 @@ export function PersonasPage() {
           </Select>
         </div>
         <Button variante="secundario" onClick={limpiarFiltros}>
+          <RotateCcw aria-hidden size={18} />
           Limpiar filtros
         </Button>
       </section>
       <section className="space-y-4">
-        {personas.isLoading && <p>Cargando personas…</p>}
+        {personas.isLoading && (
+          <IndicadorCarga
+            mensaje="Cargando personas registradas…"
+            subtexto="Consultando docentes, alumnos y personal de la escuela."
+          />
+        )}
         {personas.isError && (
           <Alert>
             No se pudieron cargar las personas. Recarga la página e intenta de nuevo.
