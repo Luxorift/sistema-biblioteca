@@ -5,6 +5,7 @@ import { LoginPage, RequireAuth } from '@/features/auth'
 import { BuscarMaterialPage } from '@/features/buscar-materiales'
 import { HomePage } from '@/features/home'
 import { AgregarMaterialPage } from '@/features/materiales'
+import { PersonasPage } from '@/features/personas'
 import { NotFoundPage } from './NotFoundPage'
 
 // Mapa de toda la app. Cada ruta apunta a una página; las páginas viven en src/features/*.
@@ -23,6 +24,7 @@ export const router = createBrowserRouter([
           { path: 'prestar', element: <ComingSoonPage titulo="Prestar" /> },
           { path: 'devolver', element: <ComingSoonPage titulo="Devolver" /> },
           { path: 'agregar', element: <AgregarMaterialPage /> },
+          { path: 'personas', element: <PersonasPage /> },
         ],
       },
     ],
