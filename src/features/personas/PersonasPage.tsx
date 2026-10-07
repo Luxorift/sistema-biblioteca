@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom'
 import { Alert } from '@/components/ui/Alert'
 import { Button } from '@/components/ui/Button'
 import { Dialog } from '@/components/ui/Dialog'
+import { Select } from '@/components/ui/Select'
 import { TextField } from '@/components/ui/TextField'
 import { FormularioPersona } from './components/FormularioPersona'
 import { TablaPersonas } from './components/TablaPersonas'
@@ -33,19 +34,40 @@ export function PersonasPage() {
   const crearPersona = useCrearPersona()
   const crearTipo = useCrearTipoPersona()
   const [buscar, setBuscar] = useState('')
+  const [tipoFiltro, setTipoFiltro] = useState('')
+  const [estadoFiltro, setEstadoFiltro] = useState('')
+  const [correoFiltro, setCorreoFiltro] = useState('')
   const [confirmar, setConfirmar] = useState<DatosFormulario | null>(null)
   const [nuevoTipo, setNuevoTipo] = useState(false)
   const [nombreTipo, setNombreTipo] = useState('')
   const [error, setError] = useState<string | null>(null)
   const filtradas = useMemo(
     () =>
-      (personas.data ?? []).filter((persona) =>
-        `${persona.nombres} ${persona.apellidoPaterno} ${persona.apellidoMaterno ?? ''} ${persona.dni}`
+      (personas.data ?? []).filter((persona) => {
+        const termino = buscar.trim().toLowerCase()
+        const coincideBusqueda = `${persona.nombres} ${persona.apellidoPaterno} ${persona.apellidoMaterno ?? ''} ${persona.dni} ${persona.correo ?? ''}`
           .toLowerCase()
-          .includes(buscar.trim().toLowerCase()),
-      ),
-    [personas.data, buscar],
+          .includes(termino)
+        const coincideTipo = !tipoFiltro || persona.tipoPersonaId === Number(tipoFiltro)
+        const coincideEstado =
+          !estadoFiltro ||
+          (estadoFiltro === 'activo' ? persona.activo : !persona.activo)
+        const coincideCorreo =
+          !correoFiltro ||
+          (correoFiltro === 'con-correo' ? Boolean(persona.correo) : !persona.correo)
+
+        return (
+          coincideBusqueda && coincideTipo && coincideEstado && coincideCorreo
+        )
+      }),
+    [personas.data, buscar, tipoFiltro, estadoFiltro, correoFiltro],
   )
+  const limpiarFiltros = () => {
+    setBuscar('')
+    setTipoFiltro('')
+    setEstadoFiltro('')
+    setCorreoFiltro('')
+  }
   const guardar = async (datos: DatosFormulario) => {
     setError(null)
     try {
@@ -100,14 +122,51 @@ export function PersonasPage() {
           onEnviar={setConfirmar}
         />
       </section>
-      <section className="space-y-4">
+      <section className="border-borde space-y-5 rounded-2xl border-2 bg-white p-5">
         <h2 className="text-2xl font-bold">Buscar personas</h2>
-        <TextField
-          label="Buscar por nombre o DNI"
-          value={buscar}
-          onChange={(evento) => setBuscar(evento.target.value)}
-          placeholder="Escribe un nombre o DNI"
-        />
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <TextField
+            label="Nombre, DNI o correo"
+            value={buscar}
+            onChange={(evento) => setBuscar(evento.target.value)}
+            placeholder="Escribe un dato"
+          />
+          <Select
+            label="Tipo de persona"
+            value={tipoFiltro}
+            onChange={(evento) => setTipoFiltro(evento.target.value)}
+          >
+            <option value="">Todos los tipos</option>
+            {(tipos.data ?? []).map((tipo) => (
+              <option key={tipo.id} value={tipo.id}>
+                {tipo.nombre}
+              </option>
+            ))}
+          </Select>
+          <Select
+            label="Estado"
+            value={estadoFiltro}
+            onChange={(evento) => setEstadoFiltro(evento.target.value)}
+          >
+            <option value="">Todos los estados</option>
+            <option value="activo">Activas</option>
+            <option value="inactivo">Inactivas</option>
+          </Select>
+          <Select
+            label="Correo"
+            value={correoFiltro}
+            onChange={(evento) => setCorreoFiltro(evento.target.value)}
+          >
+            <option value="">Con o sin correo</option>
+            <option value="con-correo">Con correo</option>
+            <option value="sin-correo">Sin correo</option>
+          </Select>
+        </div>
+        <Button variante="secundario" onClick={limpiarFiltros}>
+          Limpiar filtros
+        </Button>
+      </section>
+      <section className="space-y-4">
         {personas.isLoading && <p>Cargando personas…</p>}
         {personas.isError && (
           <Alert>
