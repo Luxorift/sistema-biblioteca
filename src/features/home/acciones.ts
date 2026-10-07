@@ -1,4 +1,4 @@
-import { BookDown, BookPlus, BookUp, Search, type LucideIcon } from 'lucide-react'
+import { BookDown, BookPlus, BookUp, Search, UsersRound, type LucideIcon } from 'lucide-react'
 
 export interface AccionInicio {
   id: string
@@ -10,7 +10,7 @@ export interface AccionInicio {
   color: string
 }
 
-// Las cuatro tareas del día a día. Para agregar o cambiar una, se edita solo esta lista.
+// Las tareas del día a día. Para agregar o cambiar una, se edita solo esta lista.
 export const accionesInicio: AccionInicio[] = [
   {
     id: 'buscar',
@@ -43,5 +43,13 @@ export const accionesInicio: AccionInicio[] = [
     ruta: '/agregar',
     icono: BookPlus,
     color: 'bg-lomo-ocre',
+  },
+  {
+    id: 'personas',
+    titulo: 'Personas',
+    descripcion: 'Registra a docentes, alumnos y personal.',
+    ruta: '/personas',
+    icono: UsersRound,
+    color: 'bg-lomo-morado',
   },
 ]
