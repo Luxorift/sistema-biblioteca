@@ -1,12 +1,10 @@
 import { createBrowserRouter } from 'react-router-dom'
 import { AppShell } from '@/components/layout/AppShell'
 import { LoginPage, RequireAuth } from '@/features/auth'
-import { BuscarMaterialPage } from '@/features/buscar-materiales'
 import { HomePage } from '@/features/home'
-import { AgregarMaterialPage } from '@/features/materiales'
+import { MaterialesPage } from '@/features/materiales'
 import { PersonasPage } from '@/features/personas'
-import { PrestarPage, HistorialPrestamosPage } from '@/features/prestamos'
-import { DevolverPage } from '@/features/devoluciones'
+import { PrestamosPage } from '@/features/prestamos'
 import { EjemplaresPage } from '@/features/ejemplares'
 import { EtiquetasPage } from '@/features/etiquetas'
 import { CatalogosPage } from '@/features/catalogos'
@@ -24,16 +22,25 @@ export const router = createBrowserRouter([
         element: <AppShell />,
         children: [
           { index: true, element: <HomePage /> },
-          // Temporales: se reemplazan por la página real de cada feature.
-          { path: 'buscar', element: <BuscarMaterialPage /> },
-          { path: 'prestar', element: <PrestarPage /> },
-          { path: 'devolver', element: <DevolverPage /> },
-          { path: 'agregar', element: <AgregarMaterialPage /> },
+
+          // Módulo unificado de Materiales y Libros (búsqueda y registro)
+          { path: 'materiales', element: <MaterialesPage tabInicial="buscar" /> },
+          { path: 'buscar', element: <MaterialesPage tabInicial="buscar" /> },
+          { path: 'agregar', element: <MaterialesPage tabInicial="agregar" /> },
+
+          // Mostrador unificado de Préstamos y Devoluciones
+          { path: 'prestamos', element: <PrestamosPage tabInicial="devolver" /> },
+          { path: 'devolver', element: <PrestamosPage tabInicial="devolver" /> },
+          { path: 'prestar', element: <PrestamosPage tabInicial="prestar" /> },
+          { path: 'historial', element: <PrestamosPage tabInicial="historial" /> },
+
+          // Otros módulos del sistema
           { path: 'personas', element: <PersonasPage /> },
-          { path: 'etiquetas', element: <EtiquetasPage /> },
           { path: 'ejemplares', element: <EjemplaresPage /> },
-          { path: 'historial', element: <HistorialPrestamosPage /> },
+          { path: 'etiquetas', element: <EtiquetasPage /> },
           { path: 'catalogos', element: <CatalogosPage /> },
+
+          // Administración protegida para administradores
           {
             element: <RequireAuth roles={['admin']} />,
             children: [{ path: 'usuarios', element: <UsuariosPage /> }],
