@@ -4,6 +4,7 @@ import { Alert } from '@/components/ui/Alert'
 import { Button } from '@/components/ui/Button'
 import { Select } from '@/components/ui/Select'
 import { TextField } from '@/components/ui/TextField'
+import { EditarMaterialDialog } from './components/EditarMaterialDialog'
 import type { MaterialEncontrado } from './types'
 import { useBuscarMateriales } from './useBuscarMateriales'
 
@@ -20,6 +21,8 @@ export function BuscarMaterialPage() {
   const [tipo, setTipo] = useState('')
   const [categoria, setCategoria] = useState('')
   const [disponibilidad, setDisponibilidad] = useState('')
+  const [materialEditar, setMaterialEditar] = useState<MaterialEncontrado | null>(null)
+  const [exitoEdicion, setExitoEdicion] = useState(false)
   const materiales = useMemo(() => consulta.data ?? [], [consulta.data])
   const filtrados = useMemo(
     () =>
@@ -74,6 +77,11 @@ export function BuscarMaterialPage() {
         <Alert>
           No se pudo cargar el inventario. Intenta recargar la página. Si continúa, avisa
           al administrador.
+        </Alert>
+      )}
+      {exitoEdicion && (
+        <Alert>
+          Los datos del material se guardaron correctamente. Revisa la tabla si hace falta.
         </Alert>
       )}
       {consulta.isSuccess && (
@@ -158,6 +166,7 @@ export function BuscarMaterialPage() {
                     <th className="p-4">Área</th>
                     <th className="p-4">Copias</th>
                     <th className="p-4">Disponibles</th>
+                    <th className="p-4">Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -175,6 +184,17 @@ export function BuscarMaterialPage() {
                         <td className="p-4">{material.categoria ?? '—'}</td>
                         <td className="p-4">{material.copias.length}</td>
                         <td className="p-4">{disponibles}</td>
+                        <td className="p-4">
+                          <Button
+                            variante="secundario"
+                            onClick={() => {
+                              setExitoEdicion(false)
+                              setMaterialEditar(material)
+                            }}
+                          >
+                            Editar datos
+                          </Button>
+                        </td>
                       </tr>
                     )
                   })}
@@ -184,6 +204,13 @@ export function BuscarMaterialPage() {
           )}
         </>
       )}
+      <EditarMaterialDialog
+        key={materialEditar ? String(materialEditar.id) : 'cerrado'}
+        material={materialEditar}
+        abierto={Boolean(materialEditar)}
+        onCerrar={() => setMaterialEditar(null)}
+        onGuardado={() => setExitoEdicion(true)}
+      />
     </div>
   )
 }
