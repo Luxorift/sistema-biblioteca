@@ -4,7 +4,6 @@ import { ActionTile } from './ActionTile'
 
 export function HomePage() {
   const { perfil } = useAuth()
-  const primerNombre = perfil?.nombre.split(' ')[0]
 
   const accionesPermitidas = accionesInicio.filter((accion) => {
     if (accion.soloAdmin && perfil?.rol !== 'admin') {
@@ -14,13 +13,9 @@ export function HomePage() {
   })
 
   return (
-    <div className="space-y-8">
-      <div className="space-y-1">
-        <h1 className="text-4xl font-bold">Hola, {primerNombre}</h1>
-        <p className="text-tinta-suave text-xl">¿Qué quieres hacer hoy?</p>
-      </div>
-
-      <div className="grid gap-5 sm:grid-cols-2">
+    <div className="mx-auto w-full max-w-4xl py-2">
+      {/* Contenedor de tarjetas centrado y equilibrado en pantallas grandes */}
+      <div className="grid gap-6 sm:grid-cols-2">
         {accionesPermitidas.map((accion) => (
           <ActionTile key={accion.id} accion={accion} />
         ))}
