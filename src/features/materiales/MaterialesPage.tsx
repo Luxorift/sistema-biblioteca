@@ -1,4 +1,4 @@
-import { BookPlus, Search } from 'lucide-react'
+import { ArrowLeft, BookPlus, Search } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { BuscarMaterialPage } from '@/features/buscar-materiales'
 import { AgregarMaterialPage } from './AgregarMaterialPage'
@@ -23,7 +23,7 @@ export function MaterialesPage({ tabInicial }: Props) {
 
   return (
     <div className="space-y-6">
-      {/* Barra de pestañas unificada */}
+      {/* Barra de pestañas unificada con UN SOLO botón de volver al inicio */}
       <div className="border-b-2 border-borde pb-4">
         <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
           <div>
@@ -34,8 +34,9 @@ export function MaterialesPage({ tabInicial }: Props) {
           </div>
           <Link
             to="/"
-            className="border-borde inline-flex min-h-12 items-center justify-center rounded-xl border-2 bg-white px-5 text-lg font-bold"
+            className="border-borde inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border-2 bg-white px-5 text-lg font-bold transition-all hover:bg-papel active:scale-[0.98]"
           >
+            <ArrowLeft aria-hidden size={20} />
             Volver al inicio
           </Link>
         </div>
@@ -48,9 +49,9 @@ export function MaterialesPage({ tabInicial }: Props) {
             type="button"
             onClick={() => cambiarTab('buscar')}
             aria-current={tabActiva === 'buscar' ? 'page' : undefined}
-            className={`min-h-12 rounded-xl px-5 py-2.5 text-lg font-bold transition-colors inline-flex items-center gap-2 ${
+            className={`min-h-12 rounded-xl px-5 py-2.5 text-lg font-bold transition-colors inline-flex items-center gap-2 cursor-pointer ${
               tabActiva === 'buscar'
-                ? 'bg-primario text-white'
+                ? 'bg-primario text-white shadow-xs'
                 : 'bg-white text-tinta border-2 border-borde hover:bg-papel'
             }`}
           >
@@ -61,9 +62,9 @@ export function MaterialesPage({ tabInicial }: Props) {
             type="button"
             onClick={() => cambiarTab('agregar')}
             aria-current={tabActiva === 'agregar' ? 'page' : undefined}
-            className={`min-h-12 rounded-xl px-5 py-2.5 text-lg font-bold transition-colors inline-flex items-center gap-2 ${
+            className={`min-h-12 rounded-xl px-5 py-2.5 text-lg font-bold transition-colors inline-flex items-center gap-2 cursor-pointer ${
               tabActiva === 'agregar'
-                ? 'bg-primario text-white'
+                ? 'bg-primario text-white shadow-xs'
                 : 'bg-white text-tinta border-2 border-borde hover:bg-papel'
             }`}
           >
@@ -73,11 +74,11 @@ export function MaterialesPage({ tabInicial }: Props) {
         </nav>
       </div>
 
-      {/* Contenido según la pestaña */}
+      {/* Contenido sin encabezado duplicado */}
       {tabActiva === 'buscar' ? (
-        <BuscarMaterialPage />
+        <BuscarMaterialPage ocultarEncabezado />
       ) : (
-        <AgregarMaterialPage />
+        <AgregarMaterialPage ocultarEncabezado />
       )}
     </div>
   )

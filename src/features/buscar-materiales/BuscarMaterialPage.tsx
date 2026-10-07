@@ -1,7 +1,9 @@
+import { ArrowLeft } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Alert } from '@/components/ui/Alert'
 import { Button } from '@/components/ui/Button'
+import { IndicadorCarga } from '@/components/feedback'
 import { Select } from '@/components/ui/Select'
 import { TextField } from '@/components/ui/TextField'
 import { EditarMaterialDialog } from './components/EditarMaterialDialog'
@@ -12,7 +14,11 @@ function contiene(texto: string, busqueda: string) {
   return texto.toLocaleLowerCase().includes(busqueda.trim().toLocaleLowerCase())
 }
 
-export function BuscarMaterialPage() {
+interface BuscarMaterialPageProps {
+  ocultarEncabezado?: boolean
+}
+
+export function BuscarMaterialPage({ ocultarEncabezado = false }: BuscarMaterialPageProps) {
   const consulta = useBuscarMateriales()
   const [titulo, setTitulo] = useState('')
   const [autor, setAutor] = useState('')
@@ -58,21 +64,29 @@ export function BuscarMaterialPage() {
   }
   return (
     <div className="space-y-7">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold">Buscar material</h1>
-          <p className="text-tinta-suave text-xl">
-            Revisa el inventario y filtra por los datos que necesitas.
-          </p>
+      {!ocultarEncabezado && (
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold">Buscar material</h1>
+            <p className="text-tinta-suave text-xl">
+              Revisa el inventario y filtra por los datos que necesitas.
+            </p>
+          </div>
+          <Link
+            to="/"
+            className="border-borde inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border-2 bg-white px-5 text-lg font-bold transition-all hover:bg-papel active:scale-[0.98]"
+          >
+            <ArrowLeft aria-hidden size={20} />
+            Volver al inicio
+          </Link>
         </div>
-        <Link
-          to="/"
-          className="border-borde inline-flex min-h-12 items-center justify-center rounded-xl border-2 bg-white px-5 text-lg font-bold"
-        >
-          Volver al inicio
-        </Link>
-      </div>
-      {consulta.isLoading && <p aria-live="polite">Cargando materiales…</p>}
+      )}
+      {consulta.isLoading && (
+        <IndicadorCarga
+          mensaje="Cargando catálogo de libros…"
+          subtexto="Estamos obteniendo los títulos, autores y copias del inventario escolar."
+        />
+      )}
       {consulta.isError && (
         <Alert>
           No se pudo cargar el inventario. Intenta recargar la página. Si continúa, avisa

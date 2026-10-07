@@ -1,7 +1,9 @@
+import { ArrowLeft } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Alert } from '@/components/ui/Alert'
 import { Button } from '@/components/ui/Button'
+import { IndicadorCarga } from '@/components/feedback'
 import { DatePicker } from '@/components/ui/DatePicker'
 import { Dialog } from '@/components/ui/Dialog'
 import { TextField } from '@/components/ui/TextField'
@@ -9,7 +11,11 @@ import { ResumenDevolucion } from './components/ResumenDevolucion'
 import type { DevolucionConfirmada, PrestamoPendiente } from './types'
 import { usePrestamosPendientes, useRegistrarDevolucion } from './useDevoluciones'
 
-export function DevolverPage() {
+interface DevolverPageProps {
+  ocultarEncabezado?: boolean
+}
+
+export function DevolverPage({ ocultarEncabezado = false }: DevolverPageProps) {
   const hoy = new Date().toISOString().slice(0, 10)
   const prestamos = usePrestamosPendientes()
   const registrar = useRegistrarDevolucion()
@@ -58,22 +64,30 @@ export function DevolverPage() {
     return <ResumenDevolucion devolucion={resumen} onOtra={() => setResumen(null)} />
   return (
     <div className="space-y-7">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold">Devolver material</h1>
-          <p className="text-tinta-suave text-xl">
-            Revisa préstamos pendientes y confirma cuando una copia regrese.
-          </p>
+      {!ocultarEncabezado && (
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold">Devolver material</h1>
+            <p className="text-tinta-suave text-xl">
+              Revisa préstamos pendientes y confirma cuando una copia regrese.
+            </p>
+          </div>
+          <Link
+            to="/"
+            className="border-borde inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border-2 bg-white px-5 text-lg font-bold transition-all hover:bg-papel active:scale-[0.98]"
+          >
+            <ArrowLeft aria-hidden size={20} />
+            Volver al inicio
+          </Link>
         </div>
-        <Link
-          to="/"
-          className="border-borde inline-flex min-h-12 items-center justify-center rounded-xl border-2 bg-white px-5 text-lg font-bold"
-        >
-          Volver al inicio
-        </Link>
-      </div>
+      )}
       {error && <Alert>{error}</Alert>}
-      {prestamos.isLoading && <p>Cargando préstamos pendientes…</p>}
+      {prestamos.isLoading && (
+        <IndicadorCarga
+          mensaje="Cargando préstamos pendientes…"
+          subtexto="Buscando libros que se encuentran actualmente prestados."
+        />
+      )}
       {prestamos.isError && (
         <Alert>
           No se pudieron cargar los préstamos. Recarga la página e intenta de nuevo.

@@ -1,3 +1,4 @@
+import { ArrowLeft } from 'lucide-react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
@@ -5,6 +6,7 @@ import { Link } from 'react-router-dom'
 import { Alert } from '@/components/ui/Alert'
 import { Button } from '@/components/ui/Button'
 import { Dialog } from '@/components/ui/Dialog'
+import { IndicadorCarga } from '@/components/feedback'
 import { TextField } from '@/components/ui/TextField'
 import { FormularioPrestamo } from './components/FormularioPrestamo'
 import { ResumenPrestamo } from './components/ResumenPrestamo'
@@ -21,7 +23,11 @@ import type {
   PrestamoConfirmado,
 } from './types'
 
-export function PrestarPage() {
+interface PrestarPageProps {
+  ocultarEncabezado?: boolean
+}
+
+export function PrestarPage({ ocultarEncabezado = false }: PrestarPageProps) {
   const hoy = new Date().toISOString().slice(0, 10)
   const formulario = useForm<DatosFormulario>({
     resolver: zodResolver(esquemaPrestamo),
@@ -110,20 +116,23 @@ export function PrestarPage() {
   if (resumen) return <ResumenPrestamo prestamo={resumen} onOtro={reiniciar} />
   return (
     <div className="space-y-7">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold">Prestar material</h1>
-          <p className="text-tinta-suave text-xl">
-            Elige un material, una copia y la persona que lo recibirá.
-          </p>
+      {!ocultarEncabezado && (
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold">Prestar material</h1>
+            <p className="text-tinta-suave text-xl">
+              Elige un material, una copia y la persona que lo recibirá.
+            </p>
+          </div>
+          <Link
+            to="/"
+            className="border-borde inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border-2 bg-white px-5 text-lg font-bold transition-all hover:bg-papel active:scale-[0.98]"
+          >
+            <ArrowLeft aria-hidden size={20} />
+            Volver al inicio
+          </Link>
         </div>
-        <Link
-          to="/"
-          className="border-borde inline-flex min-h-12 items-center justify-center rounded-xl border-2 bg-white px-5 text-lg font-bold"
-        >
-          Volver al inicio
-        </Link>
-      </div>
+      )}
       {error && <Alert>{error}</Alert>}
       {(materiales.isError || personas.isError) && (
         <Alert>
@@ -132,7 +141,10 @@ export function PrestarPage() {
         </Alert>
       )}
       {materiales.isLoading || personas.isLoading ? (
-        <p>Cargando datos para el préstamo…</p>
+        <IndicadorCarga
+          mensaje="Cargando materiales y personas…"
+          subtexto="Obteniendo la lista de copias disponibles y las personas autorizadas."
+        />
       ) : (
         <>
           <section className="space-y-4">
