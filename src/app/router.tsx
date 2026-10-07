@@ -7,6 +7,7 @@ import { AgregarMaterialPage } from '@/features/materiales'
 import { PersonasPage } from '@/features/personas'
 import { PrestarPage } from '@/features/prestamos'
 import { DevolverPage } from '@/features/devoluciones'
+import { EjemplaresPage } from '@/features/ejemplares'
 import { EtiquetasPage } from '@/features/etiquetas'
 import { NotFoundPage } from './NotFoundPage'
 
@@ -28,6 +29,7 @@ export const router = createBrowserRouter([
           { path: 'agregar', element: <AgregarMaterialPage /> },
           { path: 'personas', element: <PersonasPage /> },
           { path: 'etiquetas', element: <EtiquetasPage /> },
+          { path: 'ejemplares', element: <EjemplaresPage /> },
         ],
       },
     ],
