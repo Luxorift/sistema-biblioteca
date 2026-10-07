@@ -10,80 +10,100 @@ import { FormularioPrestamo } from './components/FormularioPrestamo'
 import { ResumenPrestamo } from './components/ResumenPrestamo'
 import { esquemaPrestamo, type FormularioPrestamo as DatosFormulario } from './schemas'
 import {
-  useCopiasDisponibles,
+  useMaterialesPrestables,
   usePersonasActivas,
   useRegistrarPrestamo,
 } from './usePrestamos'
-import type { CopiaDisponible, PersonaPrestataria, PrestamoConfirmado } from './types'
+import type {
+  CopiaDisponible,
+  MaterialPrestable,
+  PersonaPrestataria,
+  PrestamoConfirmado,
+} from './types'
 
 export function PrestarPage() {
+  const hoy = new Date().toISOString().slice(0, 10)
   const formulario = useForm<DatosFormulario>({
     resolver: zodResolver(esquemaPrestamo),
     defaultValues: {
       ejemplarId: 0,
       personaId: 0,
-      fechaPrestamo: new Date().toISOString().slice(0, 10),
+      fechaPrestamo: hoy,
       tieneFechaLimite: false,
       fechaLimite: '',
     },
   })
-  const copias = useCopiasDisponibles()
+  const materiales = useMaterialesPrestables()
   const personas = usePersonasActivas()
   const registrar = useRegistrarPrestamo()
-  const [buscarCopia, setBuscarCopia] = useState('')
-  const [buscarPersona, setBuscarPersona] = useState('')
+  const [filtroMaterial, setFiltroMaterial] = useState('')
+  const [filtroPersona, setFiltroPersona] = useState('')
+  const [materialSeleccionado, setMaterialSeleccionado] =
+    useState<MaterialPrestable | null>(null)
   const [copiaSeleccionada, setCopiaSeleccionada] = useState<CopiaDisponible | null>(null)
   const [personaSeleccionada, setPersonaSeleccionada] =
     useState<PersonaPrestataria | null>(null)
   const [confirmar, setConfirmar] = useState<DatosFormulario | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [resumen, setResumen] = useState<PrestamoConfirmado | null>(null)
-  const copiasFiltradas = useMemo(
+  const materialesFiltrados = useMemo(
     () =>
-      (copias.data ?? []).filter((copia) =>
-        `${copia.codigo} ${copia.titulo}`
+      (materiales.data ?? []).filter((material) =>
+        `${material.titulo} ${material.autores.join(' ')} ${material.editorial ?? ''} ${material.tipo} ${material.anio ?? ''}`
           .toLowerCase()
-          .includes(buscarCopia.toLowerCase()),
+          .includes(filtroMaterial.toLowerCase()),
       ),
-    [copias.data, buscarCopia],
+    [materiales.data, filtroMaterial],
   )
   const personasFiltradas = useMemo(
     () =>
       (personas.data ?? []).filter((persona) =>
-        `${persona.nombreCompleto} ${persona.dni}`
+        `${persona.nombreCompleto} ${persona.dni} ${persona.tipo}`
           .toLowerCase()
-          .includes(buscarPersona.toLowerCase()),
+          .includes(filtroPersona.toLowerCase()),
       ),
-    [personas.data, buscarPersona],
+    [personas.data, filtroPersona],
   )
+  const elegirMaterial = (material: MaterialPrestable) => {
+    setMaterialSeleccionado(material)
+    setCopiaSeleccionada(null)
+    formulario.setValue('ejemplarId', 0)
+  }
   const guardar = async (datos: DatosFormulario) => {
-    const copia = (copias.data ?? []).find((fila) => fila.id === datos.ejemplarId)
-    const persona = (personas.data ?? []).find((fila) => fila.id === datos.personaId)
-    if (!copia || !persona) {
-      setError(
-        'La copia o la persona ya no está disponible. Actualiza la pantalla e intenta de nuevo.',
-      )
+    if (!copiaSeleccionada || !personaSeleccionada) {
+      setError('Elige una copia y una persona antes de continuar.')
       setConfirmar(null)
       return
     }
     setError(null)
     try {
-      setResumen(await registrar.mutateAsync({ datos, copia, persona }))
+      setResumen(
+        await registrar.mutateAsync({
+          datos,
+          copia: copiaSeleccionada,
+          persona: personaSeleccionada,
+        }),
+      )
       setConfirmar(null)
     } catch {
       setError(
-        'No se pudo registrar el préstamo. Verifica que la copia siga disponible e intenta de nuevo.',
+        'No se pudo registrar el préstamo. La copia pudo haber sido prestada por otra persona. Actualiza e intenta de nuevo.',
       )
       setConfirmar(null)
     }
   }
   const reiniciar = () => {
-    formulario.reset()
-    setResumen(null)
-    setBuscarCopia('')
-    setBuscarPersona('')
+    formulario.reset({
+      ejemplarId: 0,
+      personaId: 0,
+      fechaPrestamo: hoy,
+      tieneFechaLimite: false,
+      fechaLimite: '',
+    })
+    setMaterialSeleccionado(null)
     setCopiaSeleccionada(null)
     setPersonaSeleccionada(null)
+    setResumen(null)
   }
   if (resumen) return <ResumenPrestamo prestamo={resumen} onOtro={reiniciar} />
   return (
@@ -92,7 +112,7 @@ export function PrestarPage() {
         <div>
           <h1 className="text-3xl font-bold">Prestar material</h1>
           <p className="text-tinta-suave text-xl">
-            Elige una copia disponible y la persona que la recibirá.
+            Elige un material, una copia y la persona que lo recibirá.
           </p>
         </div>
         <Link
@@ -103,54 +123,122 @@ export function PrestarPage() {
         </Link>
       </div>
       {error && <Alert>{error}</Alert>}
-      {(copias.isError || personas.isError) && (
+      {(materiales.isError || personas.isError) && (
         <Alert>
-          No se pudieron cargar las copias o las personas. Recarga la página e intenta de
+          No se pudieron cargar materiales o personas. Recarga la página e intenta de
           nuevo.
         </Alert>
       )}
-      {copias.isLoading || personas.isLoading ? (
+      {materiales.isLoading || personas.isLoading ? (
         <p>Cargando datos para el préstamo…</p>
       ) : (
-        <section className="border-borde space-y-6 rounded-2xl border-2 bg-white p-5">
-          <div className="grid gap-5 md:grid-cols-2">
+        <>
+          <section className="space-y-4">
+            <h2 className="text-2xl font-bold">1. Materiales disponibles</h2>
             <TextField
-              label="Filtrar copias"
-              value={buscarCopia}
-              onChange={(evento) => setBuscarCopia(evento.target.value)}
-              placeholder="Código o título"
+              label="Filtrar materiales"
+              value={filtroMaterial}
+              onChange={(evento) => setFiltroMaterial(evento.target.value)}
+              placeholder="Título, autor, editorial, tipo o año"
             />
+            <div className="border-borde overflow-x-auto rounded-2xl border-2 bg-white">
+              <table className="w-full min-w-[1050px] border-collapse text-left">
+                <thead className="bg-papel">
+                  <tr>
+                    <th className="p-4">Título</th>
+                    <th className="p-4">Autor</th>
+                    <th className="p-4">Editorial</th>
+                    <th className="p-4">Año</th>
+                    <th className="p-4">Tipo</th>
+                    <th className="p-4">Copias</th>
+                    <th className="p-4">Disponibles</th>
+                    <th className="p-4">Acción</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {materialesFiltrados.map((material) => (
+                    <tr key={material.id} className="border-borde border-t-2">
+                      <td className="p-4 font-bold">{material.titulo}</td>
+                      <td className="p-4">{material.autores.join(', ') || '—'}</td>
+                      <td className="p-4">{material.editorial ?? '—'}</td>
+                      <td className="p-4">{material.anio ?? '—'}</td>
+                      <td className="p-4">{material.tipo}</td>
+                      <td className="p-4">{material.cantidadCopias}</td>
+                      <td className="p-4">{material.copias.length}</td>
+                      <td className="p-4">
+                        <Button
+                          variante="secundario"
+                          onClick={() => elegirMaterial(material)}
+                        >
+                          Elegir
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+          <section className="space-y-4">
+            <h2 className="text-2xl font-bold">2. Personas registradas</h2>
             <TextField
               label="Filtrar personas"
-              value={buscarPersona}
-              onChange={(evento) => setBuscarPersona(evento.target.value)}
-              placeholder="Nombre o DNI"
+              value={filtroPersona}
+              onChange={(evento) => setFiltroPersona(evento.target.value)}
+              placeholder="Nombre, DNI o tipo"
             />
-          </div>
-          {!copiasFiltradas.length && (
-            <Alert>No hay copias disponibles para prestar.</Alert>
-          )}
-          {!personasFiltradas.length && (
-            <Alert>No hay personas activas. Registra una antes de prestar.</Alert>
-          )}
-          <FormularioPrestamo
-            formulario={formulario}
-            copias={buscarCopia.trim() ? copiasFiltradas : []}
-            personas={buscarPersona.trim() ? personasFiltradas : []}
-            copiaSeleccionada={copiaSeleccionada}
-            personaSeleccionada={personaSeleccionada}
-            onElegirCopia={(copia) => {
-              setCopiaSeleccionada(copia)
-              formulario.setValue('ejemplarId', copia.id, { shouldValidate: true })
-            }}
-            onElegirPersona={(persona) => {
-              setPersonaSeleccionada(persona)
-              formulario.setValue('personaId', persona.id, { shouldValidate: true })
-            }}
-            onEnviar={setConfirmar}
-            guardando={registrar.isPending}
-          />
-        </section>
+            <div className="border-borde overflow-x-auto rounded-2xl border-2 bg-white">
+              <table className="w-full min-w-[800px] border-collapse text-left">
+                <thead className="bg-papel">
+                  <tr>
+                    <th className="p-4">Persona</th>
+                    <th className="p-4">DNI</th>
+                    <th className="p-4">Tipo</th>
+                    <th className="p-4">Acción</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {personasFiltradas.map((persona) => (
+                    <tr key={persona.id} className="border-borde border-t-2">
+                      <td className="p-4 font-bold">{persona.nombreCompleto}</td>
+                      <td className="p-4">{persona.dni}</td>
+                      <td className="p-4">{persona.tipo}</td>
+                      <td className="p-4">
+                        <Button
+                          variante="secundario"
+                          onClick={() => {
+                            setPersonaSeleccionada(persona)
+                            formulario.setValue('personaId', persona.id, {
+                              shouldValidate: true,
+                            })
+                          }}
+                        >
+                          Elegir
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+          <section className="border-borde rounded-2xl border-2 bg-white p-5">
+            <FormularioPrestamo
+              formulario={formulario}
+              copias={materialSeleccionado?.copias ?? []}
+              personas={[]}
+              copiaSeleccionada={copiaSeleccionada}
+              personaSeleccionada={personaSeleccionada}
+              onElegirCopia={(copia) => {
+                setCopiaSeleccionada(copia)
+                formulario.setValue('ejemplarId', copia.id, { shouldValidate: true })
+              }}
+              onElegirPersona={() => undefined}
+              onEnviar={setConfirmar}
+              guardando={registrar.isPending}
+            />
+          </section>
+        </>
       )}
       <Dialog
         abierto={Boolean(confirmar)}
@@ -159,7 +247,9 @@ export function PrestarPage() {
       >
         {confirmar && (
           <div className="space-y-5">
-            <p>¿Confirmas entregar esta copia? Después quedará marcada como prestada.</p>
+            <p>
+              ¿Confirmas registrar el préstamo? La copia quedará marcada como prestada.
+            </p>
             <div className="flex flex-wrap gap-3">
               <Button onClick={() => void guardar(confirmar)}>
                 Sí, registrar préstamo

@@ -1,15 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
-  obtenerCopiasDisponibles,
+  obtenerMaterialesPrestables,
   obtenerPersonasActivas,
   registrarPrestamo,
 } from './api'
 import type { CopiaDisponible, DatosPrestamo, PersonaPrestataria } from './types'
 
-export function useCopiasDisponibles() {
+export function useMaterialesPrestables() {
   return useQuery({
-    queryKey: ['ejemplares', 'disponibles'],
-    queryFn: obtenerCopiasDisponibles,
+    queryKey: ['materiales', 'prestables'],
+    queryFn: obtenerMaterialesPrestables,
   })
 }
 export function usePersonasActivas() {

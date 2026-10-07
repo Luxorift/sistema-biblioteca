@@ -5,6 +5,18 @@ export interface CopiaDisponible {
   ubicacion: string | null
 }
 
+export interface MaterialPrestable {
+  id: number
+  titulo: string
+  editorial: string | null
+  anio: number | null
+  tipo: string
+  categoria: string | null
+  autores: string[]
+  copias: CopiaDisponible[]
+  cantidadCopias: number
+}
+
 export interface PersonaPrestataria {
   id: number
   nombreCompleto: string
