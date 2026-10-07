@@ -1,11 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
 import { buscarMateriales } from './api'
 
-export function useBuscarMateriales(termino: string) {
+export function useBuscarMateriales() {
   return useQuery({
-    queryKey: ['materiales', 'buscar', termino],
-    queryFn: () => buscarMateriales(termino),
-    enabled: termino.trim().length >= 2,
+    queryKey: ['materiales', 'lista'],
+    queryFn: buscarMateriales,
     staleTime: 30_000,
   })
 }
