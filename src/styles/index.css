@@ -1,0 +1,77 @@
+@import 'tailwindcss';
+
+/*
+  Sistema de diseño (tokens). Cambiar un color aquí lo cambia en toda la app.
+  - Texto sobre fondo claro: contraste mayor a 7:1.
+  - Texto blanco sobre cada "lomo": contraste mayor a 6:1.
+*/
+@theme {
+  --font-sans: 'Atkinson Hyperlegible', system-ui, sans-serif;
+
+  --color-papel: #f3f5f2;
+  --color-tinta: #1c2b2a;
+  --color-tinta-suave: #44544f;
+  --color-borde: #c5d0cb;
+  --color-primario: #1f5f4a;
+  --color-primario-oscuro: #174a3a;
+  --color-peligro: #9b2226;
+  --color-foco: #0a58ca;
+
+  /* Un color por acción principal: se reconocen de lejos, además del texto y el ícono. */
+  --color-lomo-verde: #1f5f4a;
+  --color-lomo-azul: #24476b;
+  --color-lomo-vino: #7a2e3a;
+  --color-lomo-ocre: #7c4f0e;
+  --color-lomo-morado: #5b3a78;
+}
+
+@layer base {
+  /* 18 px de base: todo el texto y los tamaños en rem escalan desde aquí. */
+  html {
+    font-size: 112.5%;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-papel text-tinta font-sans antialiased;
+  }
+
+  /* Foco siempre visible para quien navega con teclado. */
+  :focus-visible {
+    outline: 3px solid var(--color-foco);
+    outline-offset: 3px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@media print {
+  body {
+    background-color: #ffffff !important;
+    font-size: 11pt;
+  }
+
+  header,
+  footer,
+  nav {
+    display: none !important;
+  }
+
+  main {
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  @page {
+    margin: 8mm;
+    size: auto;
+  }
+}
