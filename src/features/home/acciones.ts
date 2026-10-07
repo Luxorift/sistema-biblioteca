@@ -1,4 +1,16 @@
-import { Barcode, BookDown, BookPlus, BookUp, ClipboardList, Search, UsersRound, Wrench, type LucideIcon } from 'lucide-react'
+import {
+  Barcode,
+  BookDown,
+  BookPlus,
+  BookUp,
+  ClipboardList,
+  FolderKanban,
+  Search,
+  UserCog,
+  UsersRound,
+  Wrench,
+  type LucideIcon,
+} from 'lucide-react'
 
 export interface AccionInicio {
   id: string
@@ -8,6 +20,8 @@ export interface AccionInicio {
   icono: LucideIcon
   /** Clase de color de fondo (token "lomo" definido en styles/index.css). */
   color: string
+  /** Si es true, solo los usuarios con rol 'admin' ven esta acción. */
+  soloAdmin?: boolean
 }
 
 // Las tareas del día a día. Para agregar o cambiar una, se edita solo esta lista.
@@ -75,5 +89,22 @@ export const accionesInicio: AccionInicio[] = [
     ruta: '/historial',
     icono: ClipboardList,
     color: 'bg-lomo-vino',
+  },
+  {
+    id: 'catalogos',
+    titulo: 'Catálogos',
+    descripcion: 'Administra tipos de material, categorías, editoriales y estantes.',
+    ruta: '/catalogos',
+    icono: FolderKanban,
+    color: 'bg-lomo-verde',
+  },
+  {
+    id: 'usuarios',
+    titulo: 'Usuarios del sistema',
+    descripcion: 'Administra accesos y permisos de administradores y bibliotecarios.',
+    ruta: '/usuarios',
+    icono: UserCog,
+    color: 'bg-lomo-morado',
+    soloAdmin: true,
   },
 ]
