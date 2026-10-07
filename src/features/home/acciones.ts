@@ -1,4 +1,4 @@
-import { BookDown, BookPlus, BookUp, Search, UsersRound, type LucideIcon } from 'lucide-react'
+import { Barcode, BookDown, BookPlus, BookUp, Search, UsersRound, type LucideIcon } from 'lucide-react'
 
 export interface AccionInicio {
   id: string
@@ -51,5 +51,13 @@ export const accionesInicio: AccionInicio[] = [
     ruta: '/personas',
     icono: UsersRound,
     color: 'bg-lomo-morado',
+  },
+  {
+    id: 'etiquetas',
+    titulo: 'Etiquetas',
+    descripcion: 'Imprime códigos de barra y QR para libros.',
+    ruta: '/etiquetas',
+    icono: Barcode,
+    color: 'bg-lomo-azul',
   },
 ]

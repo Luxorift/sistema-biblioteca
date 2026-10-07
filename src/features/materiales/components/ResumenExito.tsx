@@ -31,6 +31,12 @@ export function ResumenExito({
       <div className="flex flex-wrap gap-3">
         <Button onClick={onOtro}>Agregar otro material</Button>
         <Link
+          to={`/etiquetas?materialId=${resumen.materialId}`}
+          className="border-borde inline-flex min-h-12 items-center justify-center rounded-xl border-2 bg-white px-5 text-lg font-bold"
+        >
+          Imprimir etiquetas
+        </Link>
+        <Link
           to="/"
           className="border-borde inline-flex min-h-12 items-center justify-center rounded-xl border-2 bg-white px-5 text-lg font-bold"
         >
