@@ -1,4 +1,13 @@
-import { Barcode, BookDown, BookPlus, BookUp, ClipboardList, Search, UsersRound, Wrench, type LucideIcon } from 'lucide-react'
+import {
+  Barcode,
+  BookOpen,
+  BookUp,
+  FolderKanban,
+  UserCog,
+  UsersRound,
+  Wrench,
+  type LucideIcon,
+} from 'lucide-react'
 
 export interface AccionInicio {
   id: string
@@ -8,49 +17,43 @@ export interface AccionInicio {
   icono: LucideIcon
   /** Clase de color de fondo (token "lomo" definido en styles/index.css). */
   color: string
+  /** Si es true, solo los usuarios con rol 'admin' ven esta acción. */
+  soloAdmin?: boolean
 }
 
-// Las tareas del día a día. Para agregar o cambiar una, se edita solo esta lista.
+// Las tareas del día a día organizadas por flujos de trabajo principales.
 export const accionesInicio: AccionInicio[] = [
   {
-    id: 'buscar',
-    titulo: 'Buscar material',
-    descripcion: 'Encuentra un libro por título o autor.',
-    ruta: '/buscar',
-    icono: Search,
+    id: 'materiales',
+    titulo: 'Materiales y libros',
+    descripcion: 'Busca libros en el inventario o registra obras nuevas.',
+    ruta: '/materiales',
+    icono: BookOpen,
     color: 'bg-lomo-verde',
   },
   {
-    id: 'prestar',
-    titulo: 'Prestar',
-    descripcion: 'Entrega un material a una persona.',
-    ruta: '/prestar',
+    id: 'prestamos',
+    titulo: 'Préstamos y devoluciones',
+    descripcion: 'Mostrador de atención: presta, recibe libros y revisa morosos.',
+    ruta: '/prestamos',
     icono: BookUp,
     color: 'bg-lomo-azul',
   },
   {
-    id: 'devolver',
-    titulo: 'Devolver',
-    descripcion: 'Recibe un material que regresa.',
-    ruta: '/devolver',
-    icono: BookDown,
-    color: 'bg-lomo-vino',
-  },
-  {
-    id: 'agregar',
-    titulo: 'Agregar material',
-    descripcion: 'Registra un libro o una obra nueva.',
-    ruta: '/agregar',
-    icono: BookPlus,
-    color: 'bg-lomo-ocre',
-  },
-  {
     id: 'personas',
     titulo: 'Personas',
-    descripcion: 'Registra a docentes, alumnos y personal.',
+    descripcion: 'Registra a docentes, alumnos y personal escolar.',
     ruta: '/personas',
     icono: UsersRound,
     color: 'bg-lomo-morado',
+  },
+  {
+    id: 'ejemplares',
+    titulo: 'Mantenimiento de copias',
+    descripcion: 'Control de ejemplares físicos, bajas y reparaciones.',
+    ruta: '/ejemplares',
+    icono: Wrench,
+    color: 'bg-lomo-ocre',
   },
   {
     id: 'etiquetas',
@@ -61,19 +64,20 @@ export const accionesInicio: AccionInicio[] = [
     color: 'bg-lomo-azul',
   },
   {
-    id: 'ejemplares',
-    titulo: 'Mantenimiento de copias',
-    descripcion: 'Control de ejemplares, bajas y reparaciones.',
-    ruta: '/ejemplares',
-    icono: Wrench,
-    color: 'bg-lomo-ocre',
+    id: 'catalogos',
+    titulo: 'Catálogos del sistema',
+    descripcion: 'Administra tipos de material, categorías, editoriales y estantes.',
+    ruta: '/catalogos',
+    icono: FolderKanban,
+    color: 'bg-lomo-vino',
   },
   {
-    id: 'historial',
-    titulo: 'Historial de préstamos',
-    descripcion: 'Consulta préstamos pasados, devoluciones y morosos.',
-    ruta: '/historial',
-    icono: ClipboardList,
-    color: 'bg-lomo-vino',
+    id: 'usuarios',
+    titulo: 'Usuarios y accesos',
+    descripcion: 'Administra cuentas y permisos de administradores y bibliotecarios.',
+    ruta: '/usuarios',
+    icono: UserCog,
+    color: 'bg-lomo-morado',
+    soloAdmin: true,
   },
 ]

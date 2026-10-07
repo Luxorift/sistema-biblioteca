@@ -1,7 +1,9 @@
+import { ArrowLeft } from 'lucide-react'
 import { useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { Alert } from '@/components/ui/Alert'
 import { Button } from '@/components/ui/Button'
+import { IndicadorCarga } from '@/components/feedback'
 import { DatePicker } from '@/components/ui/DatePicker'
 import { Select } from '@/components/ui/Select'
 import { TextField } from '@/components/ui/TextField'
@@ -41,7 +43,11 @@ function filtrarPrestamos(
   })
 }
 
-export function HistorialPrestamosPage() {
+interface HistorialPrestamosPageProps {
+  ocultarEncabezado?: boolean
+}
+
+export function HistorialPrestamosPage({ ocultarEncabezado = false }: HistorialPrestamosPageProps) {
   const { data, isLoading, isError } = usePrestamosHistoricos()
   const [buscar, setBuscar] = useState('')
   const [desde, setDesde] = useState('')
@@ -73,7 +79,12 @@ export function HistorialPrestamosPage() {
   }
 
   if (isLoading) {
-    return <p className="text-xl p-8">Cargando historial…</p>
+    return (
+      <IndicadorCarga
+        mensaje="Cargando historial de préstamos…"
+        subtexto="Obteniendo registros de préstamos activos, devueltos y morosos."
+      />
+    )
   }
 
   if (isError) {
@@ -87,20 +98,23 @@ export function HistorialPrestamosPage() {
   return (
     <div className="space-y-7">
       {/* Encabezado */}
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold">Historial de préstamos</h1>
-          <p className="text-tinta-suave text-xl">
-            Consulta todos los préstamos: en curso, devueltos y atrasados.
-          </p>
+      {!ocultarEncabezado && (
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold">Historial de préstamos</h1>
+            <p className="text-tinta-suave text-xl">
+              Consulta todos los préstamos: en curso, devueltos y atrasados.
+            </p>
+          </div>
+          <Link
+            to="/"
+            className="border-borde inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border-2 bg-white px-5 text-lg font-bold transition-all hover:bg-papel active:scale-[0.98]"
+          >
+            <ArrowLeft aria-hidden size={20} />
+            Volver al inicio
+          </Link>
         </div>
-        <Link
-          to="/"
-          className="border-borde inline-flex min-h-12 items-center justify-center rounded-xl border-2 bg-white px-5 text-lg font-bold"
-        >
-          Volver al inicio
-        </Link>
-      </div>
+      )}
 
       {/* Tarjetas de resumen */}
       <div className="grid gap-4 sm:grid-cols-3">

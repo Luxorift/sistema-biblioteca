@@ -1,5 +1,7 @@
 @import 'tailwindcss';
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 /*
   Sistema de diseño (tokens). Cambiar un color aquí lo cambia en toda la app.
   - Texto sobre fondo claro: contraste mayor a 7:1.
@@ -25,6 +27,24 @@
   --color-lomo-morado: #5b3a78;
 }
 
+/* Variables para Modo Oscuro accesible (alto contraste, descanso visual) */
+.dark {
+  --color-papel: #111817;
+  --color-tinta: #f3f7f5;
+  --color-tinta-suave: #9cb1a9;
+  --color-borde: #293d37;
+  --color-primario: #2ca57e;
+  --color-primario-oscuro: #218363;
+  --color-peligro: #e0484e;
+  --color-foco: #60a5fa;
+
+  --color-lomo-verde: #1b5742;
+  --color-lomo-azul: #1d456d;
+  --color-lomo-vino: #742533;
+  --color-lomo-ocre: #73480c;
+  --color-lomo-morado: #52316e;
+}
+
 @layer base {
   /* 18 px de base: todo el texto y los tamaños en rem escalan desde aquí. */
   html {
@@ -34,12 +54,25 @@
 
   body {
     @apply bg-papel text-tinta font-sans antialiased;
+    transition: background-color 0.2s ease, color 0.2s ease;
   }
 
   /* Foco siempre visible para quien navega con teclado. */
   :focus-visible {
     outline: 3px solid var(--color-foco);
     outline-offset: 3px;
+  }
+
+  /* Adaptación de superficies blancas en modo oscuro para contraste y suavidad */
+  .dark .bg-white {
+    background-color: #18221f !important;
+  }
+
+  .dark input,
+  .dark select,
+  .dark textarea {
+    background-color: #18221f;
+    color: var(--color-tinta);
   }
 }
 
