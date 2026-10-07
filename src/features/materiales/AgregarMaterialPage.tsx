@@ -2,6 +2,8 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { Alert } from '@/components/ui/Alert'
+import { Button } from '@/components/ui/Button'
+import { Dialog } from '@/components/ui/Dialog'
 import { useCatalogo, useEditoriales, useUbicaciones } from '@/features/catalogos'
 import { FormularioMaterial } from './components/FormularioMaterial'
 import { NuevoCatalogoDialog } from './components/NuevoCatalogoDialog'
@@ -45,6 +47,8 @@ export function AgregarMaterialPage() {
     ubicacionId: number | null
   } | null>(null)
   const [resumen, setResumen] = useState<ResumenMaterial | null>(null)
+  const [datosPorConfirmar, setDatosPorConfirmar] = useState<DatosFormulario | null>(null)
+  const [confirmarSalida, setConfirmarSalida] = useState(false)
   const cargandoCatalogos =
     tipos.isLoading ||
     categorias.isLoading ||
@@ -71,7 +75,7 @@ export function AgregarMaterialPage() {
     })
     setPendiente(null)
   }
-  const enviar = async (datos: DatosFormulario) => {
+  const guardar = async (datos: DatosFormulario) => {
     setError(null)
     try {
       const datosMaterial = {
@@ -99,6 +103,7 @@ export function AgregarMaterialPage() {
       )
     }
   }
+  const enviar = (datos: DatosFormulario) => setDatosPorConfirmar(datos)
   const seleccionarSimilar = (material: MaterialSimilar) => {
     setPendiente({
       materialId: material.id,
@@ -112,14 +117,26 @@ export function AgregarMaterialPage() {
     setPendiente(null)
     setError(null)
   }
+  const volverAlInicio = () => {
+    if (formulario.formState.isDirty) {
+      setConfirmarSalida(true)
+      return
+    }
+    window.location.assign('/')
+  }
   if (resumen) return <ResumenExito resumen={resumen} onOtro={reiniciar} />
   return (
     <div className="space-y-7">
-      <div>
-        <h1 className="text-3xl font-bold">Agregar material</h1>
-        <p className="text-tinta-suave text-xl">
-          Registra la ficha y las copias físicas que llegaron.
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold">Agregar material</h1>
+          <p className="text-tinta-suave text-xl">
+            Registra la ficha y las copias físicas que llegaron.
+          </p>
+        </div>
+        <Button variante="secundario" onClick={volverAlInicio}>
+          Volver al inicio
+        </Button>
       </div>
       {errorCatalogos && (
         <Alert>
@@ -146,9 +163,7 @@ export function AgregarMaterialPage() {
             {pendiente.cantidad === 1 ? 'copia' : 'copias'} a ese material?
           </p>
           <div className="flex flex-wrap gap-3">
-            <button
-              type="button"
-              className="bg-primario min-h-12 rounded-xl px-5 text-lg font-bold text-white"
+            <Button
               onClick={() =>
                 crearCopias(
                   pendiente.materialId,
@@ -160,14 +175,10 @@ export function AgregarMaterialPage() {
               disabled={agregarCopias.isPending}
             >
               {agregarCopias.isPending ? 'Guardando…' : 'Sí, agregar copias'}
-            </button>
-            <button
-              type="button"
-              className="border-borde min-h-12 rounded-xl border-2 bg-white px-5 text-lg font-bold"
-              onClick={() => setPendiente(null)}
-            >
+            </Button>
+            <Button variante="secundario" onClick={() => setPendiente(null)}>
               Corregir datos
-            </button>
+            </Button>
           </div>
         </section>
       )}
@@ -194,6 +205,54 @@ export function AgregarMaterialPage() {
           }}
         />
       )}
+      <Dialog
+        abierto={Boolean(datosPorConfirmar)}
+        titulo="Confirmar registro"
+        onCerrar={() => setDatosPorConfirmar(null)}
+      >
+        {datosPorConfirmar && (
+          <div className="space-y-5">
+            <p>
+              Vas a guardar <strong>{datosPorConfirmar.titulo}</strong> y{' '}
+              <strong>
+                {datosPorConfirmar.cantidad}{' '}
+                {datosPorConfirmar.cantidad === 1 ? 'copia' : 'copias'}
+              </strong>
+              . Revisa los datos antes de continuar.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <Button
+                onClick={() => {
+                  void guardar(datosPorConfirmar)
+                  setDatosPorConfirmar(null)
+                }}
+              >
+                Sí, guardar
+              </Button>
+              <Button variante="secundario" onClick={() => setDatosPorConfirmar(null)}>
+                Seguir revisando
+              </Button>
+            </div>
+          </div>
+        )}
+      </Dialog>
+      <Dialog
+        abierto={confirmarSalida}
+        titulo="¿Salir sin guardar?"
+        onCerrar={() => setConfirmarSalida(false)}
+      >
+        <div className="space-y-5">
+          <p>Los datos que escribiste se perderán. ¿Quieres volver al inicio?</p>
+          <div className="flex flex-wrap gap-3">
+            <Button onClick={() => window.location.assign('/')}>
+              Sí, volver al inicio
+            </Button>
+            <Button variante="secundario" onClick={() => setConfirmarSalida(false)}>
+              Seguir editando
+            </Button>
+          </div>
+        </div>
+      </Dialog>
     </div>
   )
 }
