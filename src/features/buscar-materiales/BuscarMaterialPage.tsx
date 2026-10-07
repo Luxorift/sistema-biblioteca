@@ -185,15 +185,23 @@ export function BuscarMaterialPage() {
                         <td className="p-4">{material.copias.length}</td>
                         <td className="p-4">{disponibles}</td>
                         <td className="p-4">
-                          <Button
-                            variante="secundario"
-                            onClick={() => {
-                              setExitoEdicion(false)
-                              setMaterialEditar(material)
-                            }}
-                          >
-                            Editar datos
-                          </Button>
+                          <div className="flex flex-wrap gap-2">
+                            <Button
+                              variante="secundario"
+                              onClick={() => {
+                                setExitoEdicion(false)
+                                setMaterialEditar(material)
+                              }}
+                            >
+                              Editar
+                            </Button>
+                            <Link
+                              to={`/etiquetas?materialId=${material.id}`}
+                              className="border-borde inline-flex min-h-12 items-center justify-center rounded-xl border-2 bg-white px-3 text-base font-bold"
+                            >
+                              Etiquetas
+                            </Link>
+                          </div>
                         </td>
                       </tr>
                     )

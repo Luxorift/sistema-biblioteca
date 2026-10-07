@@ -7,6 +7,7 @@ import { AgregarMaterialPage } from '@/features/materiales'
 import { PersonasPage } from '@/features/personas'
 import { PrestarPage } from '@/features/prestamos'
 import { DevolverPage } from '@/features/devoluciones'
+import { EtiquetasPage } from '@/features/etiquetas'
 import { NotFoundPage } from './NotFoundPage'
 
 // Mapa de toda la app. Cada ruta apunta a una página; las páginas viven en src/features/*.
@@ -26,6 +27,7 @@ export const router = createBrowserRouter([
           { path: 'devolver', element: <DevolverPage /> },
           { path: 'agregar', element: <AgregarMaterialPage /> },
           { path: 'personas', element: <PersonasPage /> },
+          { path: 'etiquetas', element: <EtiquetasPage /> },
         ],
       },
     ],
