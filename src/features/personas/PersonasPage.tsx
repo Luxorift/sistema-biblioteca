@@ -7,9 +7,11 @@ import { Button } from '@/components/ui/Button'
 import { Dialog } from '@/components/ui/Dialog'
 import { Select } from '@/components/ui/Select'
 import { TextField } from '@/components/ui/TextField'
+import { EditarPersonaDialog } from './components/EditarPersonaDialog'
 import { FormularioPersona } from './components/FormularioPersona'
 import { TablaPersonas } from './components/TablaPersonas'
 import { esquemaPersona, type FormularioPersona as DatosFormulario } from './schemas'
+import type { Persona } from './types'
 import {
   useCrearPersona,
   useCrearTipoPersona,
@@ -41,6 +43,8 @@ export function PersonasPage() {
   const [nuevoTipo, setNuevoTipo] = useState(false)
   const [nombreTipo, setNombreTipo] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [personaEditar, setPersonaEditar] = useState<Persona | null>(null)
+  const [exitoEdicion, setExitoEdicion] = useState(false)
   const filtradas = useMemo(
     () =>
       (personas.data ?? []).filter((persona) => {
@@ -112,6 +116,11 @@ export function PersonasPage() {
         </Link>
       </div>
       {error && <Alert>{error}</Alert>}
+      {exitoEdicion && (
+        <Alert>
+          Los datos de la persona se guardaron correctamente. Revisa la tabla si hace falta.
+        </Alert>
+      )}
       <section className="border-borde space-y-5 rounded-2xl border-2 bg-white p-5">
         <h2 className="text-2xl font-bold">Registrar persona</h2>
         <FormularioPersona
@@ -175,7 +184,13 @@ export function PersonasPage() {
         )}
         {personas.isSuccess &&
           (filtradas.length ? (
-            <TablaPersonas personas={filtradas} />
+            <TablaPersonas
+              personas={filtradas}
+              onEditar={(persona) => {
+                setExitoEdicion(false)
+                setPersonaEditar(persona)
+              }}
+            />
           ) : (
             <p className="border-borde rounded-xl border-2 bg-white p-4">
               No hay personas registradas con ese dato.
@@ -222,6 +237,14 @@ export function PersonasPage() {
           </Button>
         </div>
       </Dialog>
+      <EditarPersonaDialog
+        key={personaEditar ? String(personaEditar.id) : 'cerrado'}
+        persona={personaEditar}
+        abierto={Boolean(personaEditar)}
+        tipos={tipos.data ?? []}
+        onCerrar={() => setPersonaEditar(null)}
+        onGuardado={() => setExitoEdicion(true)}
+      />
     </div>
   )
 }

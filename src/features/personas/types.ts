@@ -13,6 +13,7 @@ export interface Persona {
   dni: string
   correo: string | null
   activo: boolean
+  prestamosActivos?: number
 }
 
 export interface DatosPersona {
@@ -22,4 +23,13 @@ export interface DatosPersona {
   apellidoMaterno: string
   dni: string
   correo: string
+}
+
+export interface DatosActualizarPersona {
+  tipoPersonaId: number
+  nombres: string
+  apellidoPaterno: string
+  apellidoMaterno: string
+  correo: string
+  activo: boolean
 }
