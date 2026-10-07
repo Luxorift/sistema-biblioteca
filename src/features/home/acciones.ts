@@ -1,4 +1,4 @@
-import { Barcode, BookDown, BookPlus, BookUp, Search, UsersRound, type LucideIcon } from 'lucide-react'
+import { Barcode, BookDown, BookPlus, BookUp, Search, UsersRound, Wrench, type LucideIcon } from 'lucide-react'
 
 export interface AccionInicio {
   id: string
@@ -59,5 +59,13 @@ export const accionesInicio: AccionInicio[] = [
     ruta: '/etiquetas',
     icono: Barcode,
     color: 'bg-lomo-azul',
+  },
+  {
+    id: 'ejemplares',
+    titulo: 'Mantenimiento de copias',
+    descripcion: 'Control de ejemplares, bajas y reparaciones.',
+    ruta: '/ejemplares',
+    icono: Wrench,
+    color: 'bg-lomo-ocre',
   },
 ]

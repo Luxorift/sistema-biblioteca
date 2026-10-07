@@ -201,6 +201,12 @@ export function BuscarMaterialPage() {
                             >
                               Etiquetas
                             </Link>
+                            <Link
+                              to={`/ejemplares?materialId=${material.id}`}
+                              className="border-borde inline-flex min-h-12 items-center justify-center rounded-xl border-2 bg-white px-3 text-base font-bold"
+                            >
+                              Copias
+                            </Link>
                           </div>
                         </td>
                       </tr>
