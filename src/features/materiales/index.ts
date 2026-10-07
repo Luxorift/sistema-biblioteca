@@ -1,0 +1,1 @@
+export { AgregarMaterialPage } from './AgregarMaterialPage'
