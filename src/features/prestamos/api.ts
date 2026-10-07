@@ -5,7 +5,10 @@ import type {
   MaterialPrestable,
   PersonaPrestataria,
   PrestamoConfirmado,
+  PrestamoHistorico,
 } from './types'
+
+// ─── Funciones de préstamo activo ───────────────────────────────────────────
 
 export async function obtenerMaterialesPrestables(): Promise<MaterialPrestable[]> {
   const [
@@ -194,4 +197,126 @@ export async function registrarPrestamo(
     fechaPrestamo: datos.fechaPrestamo,
     fechaLimite: datos.tieneFechaLimite ? datos.fechaLimite : null,
   }
+}
+
+// ─── Historial completo ──────────────────────────────────────────────────────
+
+interface FilaPrestamo {
+  id: number
+  ejemplar_id: number
+  persona_id: number
+  fecha_prestamo: string
+  fecha_limite: string | null
+  fecha_devolucion: string | null
+}
+
+interface FilaEjemplar {
+  id: number
+  codigo: string
+  material_id: number
+}
+
+interface FilaMaterial {
+  id: number
+  titulo: string
+}
+
+interface FilaPersona {
+  id: number
+  nombres: string
+  apellido_paterno: string
+  apellido_materno: string | null
+  dni: string
+  tipo_persona_id: number
+}
+
+interface FilaTipoPersona {
+  id: number
+  nombre: string
+}
+
+const MS_POR_DIA = 1000 * 60 * 60 * 24
+
+function calcularAtraso(
+  fechaLimite: string | null,
+  fechaDevolucion: string | null,
+  hoy: Date,
+): { estaAtrasado: boolean; diasAtraso: number } {
+  if (!fechaLimite) return { estaAtrasado: false, diasAtraso: 0 }
+  const limite = new Date(fechaLimite)
+  const referencia = fechaDevolucion ? new Date(fechaDevolucion) : hoy
+  const dias = Math.floor((referencia.getTime() - limite.getTime()) / MS_POR_DIA)
+  return {
+    estaAtrasado: dias > 0,
+    diasAtraso: Math.max(0, dias),
+  }
+}
+
+export async function obtenerPrestamosHistoricos(): Promise<PrestamoHistorico[]> {
+  // prestamos no tiene FK directa a materiales: pasa por ejemplares.
+  const [resPrestamos, resEjemplares, resMateriales, resPersonas, resTipos] = await Promise.all([
+    supabase
+      .from('prestamos')
+      .select('id, ejemplar_id, persona_id, fecha_prestamo, fecha_limite, fecha_devolucion')
+      .order('fecha_prestamo', { ascending: false }),
+    supabase.from('ejemplares').select('id, codigo, material_id'),
+    supabase.from('materiales').select('id, titulo'),
+    supabase
+      .from('personas')
+      .select('id, nombres, apellido_paterno, apellido_materno, dni, tipo_persona_id'),
+    supabase.from('tipos_persona').select('id, nombre'),
+  ])
+
+  for (const res of [resPrestamos, resEjemplares, resMateriales, resPersonas, resTipos]) {
+    if (res.error) throw res.error
+  }
+
+  const ejemplarPorId = new Map(
+    (resEjemplares.data as FilaEjemplar[]).map((e) => [e.id, e]),
+  )
+  const materialPorId = new Map(
+    (resMateriales.data as FilaMaterial[]).map((m) => [m.id, m]),
+  )
+  const personaPorId = new Map(
+    (resPersonas.data as FilaPersona[]).map((p) => [p.id, p]),
+  )
+  const tipoPorId = new Map(
+    (resTipos.data as FilaTipoPersona[]).map((t) => [t.id, t.nombre]),
+  )
+
+  const hoy = new Date()
+
+  return (resPrestamos.data as FilaPrestamo[]).flatMap((fila) => {
+    const ejemplar = ejemplarPorId.get(fila.ejemplar_id)
+    const persona = personaPorId.get(fila.persona_id)
+    if (!ejemplar || !persona) return []
+
+    const { estaAtrasado, diasAtraso } = calcularAtraso(
+      fila.fecha_limite,
+      fila.fecha_devolucion,
+      hoy,
+    )
+
+    const nombreCompleto =
+      `${persona.apellido_paterno} ${persona.apellido_materno ?? ''}, ${persona.nombres}`.replace(
+        /\s+,/,
+        ',',
+      )
+
+    return [
+      {
+        id: fila.id,
+        codigo: ejemplar.codigo,
+        titulo: materialPorId.get(ejemplar.material_id)?.titulo ?? 'Material sin título',
+        persona: nombreCompleto,
+        dni: persona.dni,
+        tipoPersona: tipoPorId.get(persona.tipo_persona_id) ?? 'Sin tipo',
+        fechaPrestamo: fila.fecha_prestamo.slice(0, 10),
+        fechaLimite: fila.fecha_limite ? fila.fecha_limite.slice(0, 10) : null,
+        fechaDevolucion: fila.fecha_devolucion ? fila.fecha_devolucion.slice(0, 10) : null,
+        estaAtrasado,
+        diasAtraso,
+      },
+    ]
+  })
 }

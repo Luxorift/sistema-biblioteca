@@ -40,3 +40,18 @@ export interface PrestamoConfirmado {
   fechaPrestamo: string
   fechaLimite: string | null
 }
+
+// Histórico de préstamos
+export interface PrestamoHistorico {
+  id: number
+  codigo: string
+  titulo: string
+  persona: string
+  dni: string
+  tipoPersona: string
+  fechaPrestamo: string
+  fechaLimite: string | null
+  fechaDevolucion: string | null
+  estaAtrasado: boolean
+  diasAtraso: number
+}
