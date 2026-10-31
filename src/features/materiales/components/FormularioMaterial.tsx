@@ -1,9 +1,10 @@
-import { useFieldArray, type UseFormReturn } from 'react-hook-form'
+import { useFieldArray, useWatch, type UseFormReturn } from 'react-hook-form'
 import { Button } from '@/components/ui/Button'
 import { Select } from '@/components/ui/Select'
 import { TextField } from '@/components/ui/TextField'
 import type { OpcionCatalogo, Ubicacion } from '@/features/catalogos'
 import type { FormularioMaterial } from '../schemas'
+import { UbicacionesCopias } from './UbicacionesCopias'
 
 interface FormularioMaterialProps {
   formulario: UseFormReturn<FormularioMaterial>
@@ -34,6 +35,8 @@ export function FormularioMaterial({
     formState: { errors },
   } = formulario
   const { fields, append, remove } = useFieldArray({ control, name: 'autores' })
+  const cantidad = useWatch({ control, name: 'cantidad' })
+  const ubicacionesIds = useWatch({ control, name: 'ubicacionesIds' })
   return (
     <form noValidate onSubmit={handleSubmit(onEnviar)} className="space-y-6">
       <TextField
@@ -131,26 +134,18 @@ export function FormularioMaterial({
           error={errors.cantidad?.message}
           {...register('cantidad', { setValueAs: (valor) => Number(valor) })}
         />
-        <div className="space-y-2">
-          <Select
-            label="Ubicación (opcional)"
-            disabled={cargandoCatalogos}
-            {...register('ubicacionId', {
-              setValueAs: (valor) => (valor ? Number(valor) : null),
-            })}
-          >
-            <option value="">Sin ubicación por ahora</option>
-            {ubicaciones.map((ubicacion) => (
-              <option key={ubicacion.id} value={ubicacion.id}>
-                Estante {ubicacion.estante}, nivel {ubicacion.nivel}
-              </option>
-            ))}
-          </Select>
-          <Button variante="secundario" onClick={() => onNuevo('ubicacion')}>
-            Agregar nueva ubicación
-          </Button>
-        </div>
       </div>
+      <UbicacionesCopias
+        cantidad={cantidad}
+        valores={ubicacionesIds}
+        ubicaciones={ubicaciones}
+        onChange={(valores) =>
+          formulario.setValue('ubicacionesIds', valores, { shouldValidate: true })
+        }
+        onNuevaUbicacion={() => onNuevo('ubicacion')}
+        cargando={cargandoCatalogos}
+        error={errors.ubicacionesIds?.message}
+      />
       <Button type="submit" disabled={guardando}>
         {guardando ? 'Guardando…' : 'Guardar material y copias'}
       </Button>

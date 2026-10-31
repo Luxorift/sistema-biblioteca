@@ -27,13 +27,11 @@ export function useAgregarEjemplares() {
   return useMutation({
     mutationFn: ({
       materialId,
-      cantidad,
-      ubicacionId,
+      ubicacionesIds,
     }: {
       materialId: number
-      cantidad: number
-      ubicacionId: number | null
-    }) => agregarEjemplares(materialId, cantidad, ubicacionId),
+      ubicacionesIds: number[]
+    }) => agregarEjemplares(materialId, ubicacionesIds),
     onSuccess: () =>
       Promise.all(
         ['materiales', 'ejemplares', 'etiquetas', 'catalogos'].map((key) =>

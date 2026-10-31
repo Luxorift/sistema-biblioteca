@@ -27,4 +27,5 @@ export interface DatosActualizarMaterial {
   autores: string[]
   cantidadCopias: number
   cantidadDisponibles: number
+  ubicacionesNuevas: number[]
 }

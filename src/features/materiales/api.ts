@@ -49,13 +49,11 @@ export async function registrarMaterial(
 }
 export async function agregarEjemplares(
   materialId: number,
-  cantidad: number,
-  ubicacionId: number | null,
+  ubicacionesIds: number[],
 ): Promise<EjemplarCreado[]> {
-  const { data, error } = await supabase.rpc('agregar_ejemplares', {
+  const { data, error } = await supabase.rpc('agregar_ejemplares_distribuidos', {
     p_material_id: materialId,
-    p_cantidad: cantidad,
-    p_ubicacion_id: ubicacionId,
+    p_ubicaciones: ubicacionesIds,
   })
   if (error) throw error
   return (data ?? []) as EjemplarCreado[]

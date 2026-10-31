@@ -70,7 +70,7 @@ export function FormularioPrestamo({
             >
               {seleccionados.has(copia.id) ? 'Seleccionada: ' : 'Elegir: '}
               {copia.codigo} · {copia.titulo}
-              {copia.ubicacion ? ` · ${copia.ubicacion}` : ''}
+              {` · ${copia.ubicacion ?? 'Ubicación pendiente de asignar'}`}
             </Button>
           ))}
         </div>

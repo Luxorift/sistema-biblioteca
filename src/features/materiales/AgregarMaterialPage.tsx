@@ -15,6 +15,7 @@ import { esquemaMaterial, type FormularioMaterial as DatosFormulario } from './s
 import { useAgregarEjemplares, useRegistrarMaterial, useSimilares } from './useMateriales'
 import { useDebouncedValue } from './useDebouncedValue'
 import type { MaterialSimilar, ResumenMaterial } from './types'
+import { exigirUbicaciones, completarUbicaciones } from './ubicacionesCopias'
 
 type Dialogo = 'tipos_material' | 'categorias' | 'ubicacion' | null
 
@@ -22,7 +23,9 @@ interface AgregarMaterialPageProps {
   ocultarEncabezado?: boolean
 }
 
-export function AgregarMaterialPage({ ocultarEncabezado = false }: AgregarMaterialPageProps) {
+export function AgregarMaterialPage({
+  ocultarEncabezado = false,
+}: AgregarMaterialPageProps) {
   const formulario = useForm<DatosFormulario>({
     resolver: zodResolver(esquemaMaterial),
     defaultValues: {
@@ -33,9 +36,10 @@ export function AgregarMaterialPage({ ocultarEncabezado = false }: AgregarMateri
       anio: null,
       autores: [],
       cantidad: 1,
-      ubicacionId: null,
+      ubicacionesIds: [null],
     },
   })
+  const cantidad = useWatch({ control: formulario.control, name: 'cantidad' })
   const titulo = useWatch({ control: formulario.control, name: 'titulo' })
   const tituloConDemora = useDebouncedValue(titulo)
   const tipos = useCatalogo('tipos_material')
@@ -49,8 +53,7 @@ export function AgregarMaterialPage({ ocultarEncabezado = false }: AgregarMateri
   const [error, setError] = useState<string | null>(null)
   const [pendiente, setPendiente] = useState<{
     materialId: number
-    cantidad: number
-    ubicacionId: number | null
+    titulo: string
   } | null>(null)
   const [resumen, setResumen] = useState<ResumenMaterial | null>(null)
   const [datosPorConfirmar, setDatosPorConfirmar] = useState<DatosFormulario | null>(null)
@@ -65,21 +68,25 @@ export function AgregarMaterialPage({ ocultarEncabezado = false }: AgregarMateri
 
   const crearCopias = async (
     materialId: number,
-    cantidad: number,
-    ubicacionId: number | null,
+    ubicacionesIds: number[],
     tituloMaterial: string,
   ) => {
-    const ejemplares = await agregarCopias.mutateAsync({
-      materialId,
-      cantidad,
-      ubicacionId,
-    })
-    setResumen({
-      materialId,
-      titulo: tituloMaterial,
-      codigos: ejemplares.map(({ codigo }) => codigo),
-    })
-    setPendiente(null)
+    try {
+      const ejemplares = await agregarCopias.mutateAsync({
+        materialId,
+        ubicacionesIds,
+      })
+      setResumen({
+        materialId,
+        titulo: tituloMaterial,
+        codigos: ejemplares.map(({ codigo }) => codigo),
+      })
+      setPendiente(null)
+    } catch {
+      setError(
+        'No se pudieron agregar las copias. Revisa las ubicaciones y vuelve a intentarlo.',
+      )
+    }
   }
   const guardar = async (datos: DatosFormulario) => {
     setError(null)
@@ -92,15 +99,13 @@ export function AgregarMaterialPage({ ocultarEncabezado = false }: AgregarMateri
       if (resultado.yaExistia) {
         setPendiente({
           materialId: resultado.materialId,
-          cantidad: datos.cantidad,
-          ubicacionId: datos.ubicacionId,
+          titulo: datos.titulo,
         })
         return
       }
       await crearCopias(
         resultado.materialId,
-        datos.cantidad,
-        datos.ubicacionId,
+        exigirUbicaciones(datos.cantidad, datos.ubicacionesIds),
         datos.titulo,
       )
     } catch {
@@ -111,12 +116,21 @@ export function AgregarMaterialPage({ ocultarEncabezado = false }: AgregarMateri
   }
   const enviar = (datos: DatosFormulario) => setDatosPorConfirmar(datos)
   const seleccionarSimilar = (material: MaterialSimilar) => {
-    setPendiente({
-      materialId: material.id,
-      cantidad: formulario.getValues('cantidad'),
-      ubicacionId: formulario.getValues('ubicacionId'),
-    })
+    setPendiente({ materialId: material.id, titulo: material.titulo })
   }
+  const agregarAlExistente = async () => {
+    if (!pendiente || !(await formulario.trigger(['cantidad', 'ubicacionesIds']))) return
+    setError(null)
+    await crearCopias(
+      pendiente.materialId,
+      exigirUbicaciones(
+        formulario.getValues('cantidad'),
+        formulario.getValues('ubicacionesIds'),
+      ),
+      pendiente.titulo,
+    )
+  }
+
   const reiniciar = () => {
     formulario.reset()
     setResumen(null)
@@ -174,19 +188,12 @@ export function AgregarMaterialPage({ ocultarEncabezado = false }: AgregarMateri
         >
           <h2 className="text-2xl font-bold">Este material ya existe</h2>
           <p>
-            La ficha no se duplicó. ¿Quieres agregar {pendiente.cantidad}{' '}
-            {pendiente.cantidad === 1 ? 'copia' : 'copias'} a ese material?
+            La ficha no se duplicó. ¿Quieres agregar {cantidad}{' '}
+            {cantidad === 1 ? 'copia' : 'copias'} a ese material?
           </p>
           <div className="flex flex-wrap gap-3">
             <Button
-              onClick={() =>
-                crearCopias(
-                  pendiente.materialId,
-                  pendiente.cantidad,
-                  pendiente.ubicacionId,
-                  formulario.getValues('titulo'),
-                )
-              }
+              onClick={() => void agregarAlExistente()}
               disabled={agregarCopias.isPending}
             >
               {agregarCopias.isPending ? 'Guardando…' : 'Sí, agregar copias'}
@@ -216,7 +223,12 @@ export function AgregarMaterialPage({ ocultarEncabezado = false }: AgregarMateri
           onCreado={(id) => {
             if (dialogo === 'tipos_material') formulario.setValue('tipoMaterialId', id)
             if (dialogo === 'categorias') formulario.setValue('categoriaId', id)
-            if (dialogo === 'ubicacion') formulario.setValue('ubicacionId', id)
+            if (dialogo === 'ubicacion')
+              formulario.setValue(
+                'ubicacionesIds',
+                completarUbicaciones(formulario.getValues('cantidad'), []).map(() => id),
+                { shouldValidate: true },
+              )
           }}
         />
       )}

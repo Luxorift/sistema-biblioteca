@@ -17,7 +17,7 @@ export async function actualizarMaterial(
   materialId: number,
   datos: DatosActualizarMaterial,
 ): Promise<void> {
-  const { error } = await supabase.rpc('actualizar_material', {
+  const { error } = await supabase.rpc('actualizar_material_con_ubicaciones', {
     p_material_id: materialId,
     p_titulo: datos.titulo,
     p_tipo_material_id: datos.tipoMaterialId,
@@ -27,6 +27,7 @@ export async function actualizarMaterial(
     p_autores: datos.autores,
     p_cantidad_total: datos.cantidadCopias,
     p_cantidad_disponibles: datos.cantidadDisponibles,
+    p_ubicaciones_nuevas: datos.ubicacionesNuevas,
   })
   if (!error) return
   if (error.code === '23505') throw new Error('MATERIAL_DUPLICADO')

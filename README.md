@@ -24,8 +24,9 @@ Al abrir la carpeta en VS Code acepta instalar las extensiones recomendadas
 
 1. En Supabase abre **SQL Editor** y ejecuta `supabase/migrations/20261007000000_esquema_inicial.sql`.
 2. Ejecuta después `supabase/migrations/20261031000000_consistencia_biblioteca.sql`.
-3. Crea tu usuario en **Authentication > Users** y copia su UUID.
-4. Dale un perfil (sin perfil activo, la seguridad de la base bloquea todo):
+3. Ejecuta `supabase/migrations/20261031010000_ubicaciones_copias.sql` para exigir y asignar ubicaciones al crear copias.
+4. Crea tu usuario en **Authentication > Users** y copia su UUID.
+5. Dale un perfil (sin perfil activo, la seguridad de la base bloquea todo):
 
 ```sql
 insert into public.perfiles (id, nombre, rol)
@@ -154,7 +155,7 @@ migraciones porque no incluye todas las funciones, políticas ni triggers.
 Requisitos para las pruebas: Node.js 22.18+ (recomendado Node.js 24 LTS).
 Ejecuta `npm test`, `npm run lint` y `npm run build`.
 
-Las pruebas SQL ejecutan las dos migraciones completas en PostgreSQL embebido
+Las pruebas SQL ejecutan las tres migraciones completas en PostgreSQL embebido
 (PGlite), incluidas las extensiones `unaccent` y `pg_trgm`. Simulan el esquema
 mínimo de Auth y el rol `authenticated`; comprueban RLS, rollback, estados,
 préstamos, devoluciones y búsqueda paginada sin acceder al Supabase remoto.
@@ -224,3 +225,24 @@ Las pruebas de interfaz (`npm run test:ui`) cubren estos recorridos con respuest
 controladas, incluido el SVG del código de barras, la selección entre páginas y
 las confirmaciones. `npm run test:datos` ejecuta las pruebas SQL y de Edge Function.
 `npm test` ejecuta ambas suites.
+
+## 13. Ubicación de las copias
+
+Al registrar un material o aumentar sus copias desde **Editar material**, indica la
+ubicación de las copias nuevas. Puedes aplicar una ubicación a todas o desplegar
+**Asignar una ubicación distinta por copia**. Si creas una ubicación desde el
+formulario, se aplica al lote; después puedes cambiar cada copia por separado.
+
+La ubicación es obligatoria para las copias nuevas. La RPC
+`agregar_ejemplares_distribuidos(p_material_id, p_ubicaciones)` recibe una ubicación
+por copia y guarda el lote en una sola operación. La edición usa
+`actualizar_material_con_ubicaciones`, que reutiliza la edición transaccional
+existente y revierte también las copias nuevas si falla cualquier cambio.
+
+La migración `20261031010000_ubicaciones_copias.sql` se aplica después de las dos
+anteriores. No asigna ubicaciones supuestas a las copias antiguas: para corregirlas,
+abre **Mantenimiento de copias**, elige la copia e indica su ubicación real. Las
+copias ya ubicadas pueden cambiar de estante o nivel; su ubicación no puede borrarse.
+En el mostrador, una copia antigua sin ubicación aparece como **Ubicación pendiente
+de asignar**. Sigue siendo posible registrar sus préstamos y devoluciones mientras
+se completa el inventario.

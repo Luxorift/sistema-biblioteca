@@ -161,11 +161,12 @@ export function EditarEjemplarDialog({
             <div className="space-y-1">
               <Select
                 label="Ubicación (estante y nivel)"
+                error={errors.ubicacionId?.message}
                 {...register('ubicacionId', {
                   setValueAs: (valor) => (valor ? Number(valor) : null),
                 })}
               >
-                <option value="">Sin ubicación asignada</option>
+                <option value="">Elige una ubicación</option>
                 {(ubicaciones.data ?? []).map((u) => (
                   <option key={u.id} value={u.id}>
                     Estante {u.estante}, Nivel {u.nivel}
