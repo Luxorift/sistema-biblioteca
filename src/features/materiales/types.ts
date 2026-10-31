@@ -29,5 +29,5 @@ export interface DatosMaterial {
   anio: number | null
   autores: string[]
   cantidad: number
-  ubicacionId: number | null
+  ubicacionesIds: (number | null)[]
 }

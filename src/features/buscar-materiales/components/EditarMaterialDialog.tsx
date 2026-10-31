@@ -1,13 +1,18 @@
+import { Link } from 'react-router-dom'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMemo, useState, type FormEvent } from 'react'
-import { useFieldArray, useForm } from 'react-hook-form'
+import { useFieldArray, useForm, useWatch } from 'react-hook-form'
 import { Alert } from '@/components/ui/Alert'
 import { Button } from '@/components/ui/Button'
 import { Dialog } from '@/components/ui/Dialog'
 import { Select } from '@/components/ui/Select'
 import { TextField } from '@/components/ui/TextField'
-import { useCatalogo, useEditoriales } from '@/features/catalogos'
-import { NuevoCatalogoDialog } from '@/features/materiales'
+import { useCatalogo, useEditoriales, useUbicaciones } from '@/features/catalogos'
+import {
+  NuevoCatalogoDialog,
+  UbicacionesCopias,
+  exigirUbicaciones,
+} from '@/features/materiales'
 import { ErrorAjusteCopias } from '../api'
 import { esquemaEditarMaterial, type FormularioEditarMaterial } from '../schemas'
 import type { MaterialEncontrado } from '../types'
@@ -20,10 +25,12 @@ interface EditarMaterialDialogProps {
   onGuardado: () => void
 }
 
-type DialogoCatalogo = 'tipos_material' | 'categorias' | null
+type DialogoCatalogo = 'tipos_material' | 'categorias' | 'ubicacion' | null
 
 function valoresIniciales(material: MaterialEncontrado): FormularioEditarMaterial {
-  const disponibles = material.copias.filter((copia) => copia.estado === 'disponible').length
+  const disponibles = material.copias.filter(
+    (copia) => copia.estado === 'disponible',
+  ).length
   return {
     titulo: material.titulo,
     tipoMaterialId: material.tipoMaterialId,
@@ -34,6 +41,7 @@ function valoresIniciales(material: MaterialEncontrado): FormularioEditarMateria
       ? material.autores.map((nombre) => ({ nombre }))
       : [{ nombre: '' }],
     cantidadCopias: material.copias.length,
+    ubicacionesNuevas: [],
     cantidadDisponibles: disponibles,
   }
 }
@@ -62,6 +70,7 @@ export function EditarMaterialDialog({
   onCerrar,
   onGuardado,
 }: EditarMaterialDialogProps) {
+  const ubicaciones = useUbicaciones()
   const tipos = useCatalogo('tipos_material')
   const categorias = useCatalogo('categorias')
   const editoriales = useEditoriales()
@@ -75,8 +84,20 @@ export function EditarMaterialDialog({
     values: material ? valoresIniciales(material) : undefined,
   })
 
-  const { register, control, handleSubmit, setValue, formState: { errors } } = formulario
+  const {
+    register,
+    control,
+    handleSubmit,
+    setValue,
+    formState: { errors },
+  } = formulario
   const { fields, append, remove } = useFieldArray({ control, name: 'autores' })
+  const cantidadCopias = useWatch({ control, name: 'cantidadCopias' })
+  const ubicacionesNuevas = useWatch({ control, name: 'ubicacionesNuevas' })
+  const cantidadNuevas = Math.max(
+    0,
+    (cantidadCopias || 0) - (material?.copias.length ?? 0),
+  )
 
   const prestadas = useMemo(
     () => material?.copias.filter((copia) => copia.estado === 'prestado').length ?? 0,
@@ -95,6 +116,17 @@ export function EditarMaterialDialog({
       setErrorGuardado(
         `Como hay copias prestadas, solo puedes marcar hasta ${maxDisponibles} como disponibles.`,
       )
+      return
+    }
+    try {
+      exigirUbicaciones(
+        Math.max(0, datos.cantidadCopias - (material?.copias.length ?? 0)),
+        datos.ubicacionesNuevas,
+      )
+    } catch {
+      formulario.setError('ubicacionesNuevas', {
+        message: 'Indica la ubicación de cada copia nueva.',
+      })
       return
     }
     setErrorGuardado(null)
@@ -116,6 +148,10 @@ export function EditarMaterialDialog({
           autores: datos.autores.map(({ nombre }) => nombre).filter(Boolean),
           cantidadCopias: datos.cantidadCopias,
           cantidadDisponibles: datos.cantidadDisponibles,
+          ubicacionesNuevas: exigirUbicaciones(
+            Math.max(0, datos.cantidadCopias - material.copias.length),
+            datos.ubicacionesNuevas,
+          ),
         },
       })
       onGuardado()
@@ -125,18 +161,14 @@ export function EditarMaterialDialog({
     }
   }
 
-  const cargandoCatalogos = tipos.isLoading || categorias.isLoading || editoriales.isLoading
+  const cargandoCatalogos =
+    tipos.isLoading || categorias.isLoading || editoriales.isLoading
 
   if (!material) return null
 
   return (
     <>
-      <Dialog
-        abierto={abierto}
-        titulo="Editar material"
-        anchoAmplio
-        onCerrar={onCerrar}
-      >
+      <Dialog abierto={abierto} titulo="Editar material" anchoAmplio onCerrar={onCerrar}>
         <form
           noValidate
           className="space-y-5"
@@ -148,9 +180,21 @@ export function EditarMaterialDialog({
           {prestadas > 0 && (
             <p className="text-tinta-suave text-lg">
               Este material tiene <strong>{prestadas}</strong>{' '}
-              {prestadas === 1 ? 'copia prestada' : 'copias prestadas'}. Los códigos BIB- y
-              el historial de préstamos no se modifican desde aquí.
+              {prestadas === 1 ? 'copia prestada' : 'copias prestadas'}. Los códigos BIB-
+              y el historial de préstamos no se modifican desde aquí.
             </p>
+          )}
+          {material.copias.some((copia) => !copia.ubicacion) && (
+            <Alert>
+              Hay copias antiguas sin ubicación. Puedes asignarlas individualmente desde{' '}
+              <Link
+                className="font-bold underline"
+                to={`/ejemplares?materialId=${material.id}`}
+              >
+                Mantenimiento de copias
+              </Link>
+              .
+            </Alert>
           )}
           <TextField
             label="Título"
@@ -223,7 +267,8 @@ export function EditarMaterialDialog({
               max={new Date().getFullYear() + 1}
               error={errors.anio?.message}
               {...register('anio', {
-                setValueAs: (valor) => (valor === '' || valor === null ? null : Number(valor)),
+                setValueAs: (valor) =>
+                  valor === '' || valor === null ? null : Number(valor),
               })}
             />
           </div>
@@ -238,12 +283,20 @@ export function EditarMaterialDialog({
                     {...register(`autores.${indice}.nombre`)}
                   />
                 </div>
-                <Button type="button" variante="secundario" onClick={() => remove(indice)}>
+                <Button
+                  type="button"
+                  variante="secundario"
+                  onClick={() => remove(indice)}
+                >
                   Quitar
                 </Button>
               </div>
             ))}
-            <Button type="button" variante="secundario" onClick={() => append({ nombre: '' })}>
+            <Button
+              type="button"
+              variante="secundario"
+              onClick={() => append({ nombre: '' })}
+            >
               Agregar autor
             </Button>
           </fieldset>
@@ -279,6 +332,17 @@ export function EditarMaterialDialog({
               </p>
             </div>
           </div>
+          <UbicacionesCopias
+            cantidad={cantidadNuevas}
+            valores={ubicacionesNuevas}
+            ubicaciones={ubicaciones.data ?? []}
+            cargando={ubicaciones.isLoading}
+            error={errors.ubicacionesNuevas?.message}
+            onChange={(valores) =>
+              formulario.setValue('ubicacionesNuevas', valores, { shouldValidate: true })
+            }
+            onNuevaUbicacion={() => setDialogoCatalogo('ubicacion')}
+          />
           <div className="flex flex-wrap gap-3">
             <Button type="submit" disabled={actualizar.isPending || cargandoCatalogos}>
               Revisar y guardar
@@ -306,8 +370,8 @@ export function EditarMaterialDialog({
             </p>
             {confirmar.cantidadCopias < material.copias.length && (
               <Alert>
-                Al reducir copias, las sobrantes disponibles o en reparación se darán de baja.
-                No se borran códigos ni préstamos anteriores.
+                Al reducir copias, las sobrantes disponibles o en reparación se darán de
+                baja. No se borran códigos ni préstamos anteriores.
               </Alert>
             )}
             <div className="flex flex-wrap gap-3">
@@ -332,6 +396,12 @@ export function EditarMaterialDialog({
           onCreado={(id) => {
             if (dialogoCatalogo === 'tipos_material') setValue('tipoMaterialId', id)
             if (dialogoCatalogo === 'categorias') setValue('categoriaId', id)
+            if (dialogoCatalogo === 'ubicacion')
+              setValue(
+                'ubicacionesNuevas',
+                Array.from({ length: cantidadNuevas }, () => id),
+                { shouldValidate: true },
+              )
           }}
         />
       )}

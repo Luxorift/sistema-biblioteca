@@ -23,6 +23,7 @@ export const esquemaEditarMaterial = z
         nombre: z.string().trim().max(200, 'El autor es demasiado largo.'),
       }),
     ),
+    ubicacionesNuevas: z.array(z.number().positive().nullable()),
     cantidadCopias: z
       .number()
       .int('La cantidad debe ser un número entero.')

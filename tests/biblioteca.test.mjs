@@ -15,6 +15,13 @@ const migration = await readFile(
   ),
   'utf8',
 )
+const migracionUbicaciones = await readFile(
+  new URL(
+    '../supabase/migrations/20261031010000_ubicaciones_copias.sql',
+    import.meta.url,
+  ),
+  'utf8',
+)
 before(async () => {
   await db.exec(`
     create schema auth; create schema extensions;
@@ -43,6 +50,14 @@ before(async () => {
     (await db.query('select codigo from personas')).rows[0].codigo,
     'PER-000001',
   )
+  await db.exec(
+    `insert into tipos_material(nombre) values('Anterior'); insert into materiales(titulo,tipo_material_id) values('Copia anterior',1); insert into ejemplares(material_id) values(1);`,
+  )
+  await db.exec(migracionUbicaciones)
+  assert.equal(
+    (await db.query('select ubicacion_id from ejemplares')).rows[0].ubicacion_id,
+    null,
+  )
   await db.exec(`insert into auth.users values ('${admin}');
     insert into public.perfiles(id,nombre,rol) values ('${admin}','Admin','admin');
     select set_config('request.jwt.claim.sub','${admin}',false);`)
@@ -51,11 +66,12 @@ beforeEach(async () => {
   await db.exec(`reset role;
     truncate public.prestamos, public.ejemplares, public.material_autores, public.materiales,
       public.autores, public.editoriales, public.personas, public.tipos_persona,
-      public.tipos_material restart identity cascade;
+      public.tipos_material, public.ubicaciones restart identity cascade;
+    insert into public.ubicaciones(estante,nivel) values('A',1),('B',2);
     insert into public.tipos_material(nombre) values ('Libro');
     insert into public.tipos_persona(nombre) values ('Estudiante');
     insert into public.materiales(titulo,tipo_material_id) values ('Original',1);
-    insert into public.ejemplares(material_id) values (1),(1);
+    insert into public.ejemplares(material_id,ubicacion_id) values (1,1),(1,1);
     insert into public.autores(nombre) values ('García');
     insert into public.material_autores(material_id,autor_id) values(1,1);
     insert into public.personas(tipo_persona_id,nombres,apellido_paterno,dni)
@@ -72,11 +88,19 @@ const prestar = (copia = 1) =>
   values ($1,1,((now() at time zone 'America/Lima')::date + time '12:00') at time zone 'America/Lima') returning id`,
     [copia],
   )
-const editar = (total, disponibles, autores = ['Garcia']) =>
-  db.query(
-    `select public.actualizar_material(1,'Modificado',1,null,'Editorial Águila',2020::smallint,$1::text[],$2,$3)`,
-    [autores, total, disponibles],
+const editar = async (total, disponibles, autores = ['Garcia'], ubicaciones) => {
+  const actual = (
+    await db.query(
+      "select count(*)::int as n from ejemplares where material_id=1 and estado <> 'baja'",
+    )
+  ).rows[0].n
+  const nuevas =
+    ubicaciones ?? Array.from({ length: Math.max(0, total - actual) }, () => 1)
+  return db.query(
+    `select public.actualizar_material_con_ubicaciones(1,'Modificado',1,null,'Editorial Águila',2020::smallint,$1::text[],$2,$3,$4::bigint[])`,
+    [autores, total, disponibles, nuevas],
   )
+}
 
 test('préstamo y devolución sincronizan el ejemplar; una segunda devolución falla', async () => {
   await prestar()
@@ -325,7 +349,7 @@ test('el código se puede escanear o digitar y no se confunde con un libro o DNI
 })
 
 test('la credencial muestra préstamos pendientes, atrasos por día y excluye los devueltos', async () => {
-  await db.query('insert into ejemplares(material_id) values(1),(1)')
+  await db.query('insert into ejemplares(material_id,ubicacion_id) values(1,1),(1,1)')
   await db.query(`insert into prestamos(ejemplar_id,persona_id,fecha_prestamo,fecha_limite) values
     (1,1,now()-interval '3 days',(now() at time zone 'America/Lima')::date-2),
     (2,1,now()-interval '3 days',(now() at time zone 'America/Lima')::date),
@@ -366,6 +390,7 @@ test('una credencial inactiva se reconoce para informar al bibliotecario', async
 test('la migración se puede volver a aplicar', async () => {
   await db.exec('reset role;')
   await db.exec(migration)
+  await db.exec(migracionUbicaciones)
 })
 
 test('los días y atrasos usan el calendario de Lima', () => {
@@ -375,4 +400,66 @@ test('los días y atrasos usan el calendario de Lima', () => {
   assert.equal(diasEntreFechas('2026-10-31', fechaBiblioteca('2026-11-01T04:59:59Z')), 0)
   assert.equal(diasEntreFechas('2026-10-31', fechaBiblioteca('2026-11-01T05:00:00Z')), 1)
   assert.equal(instantePrestamo('2026-10-31'), '2026-10-31T12:00:00-05:00')
+})
+
+test('cada copia nueva guarda su ubicación y se puede compartir o separar', async () => {
+  await db.query(
+    'select * from agregar_ejemplares_distribuidos(1,array[1,1,2]::bigint[])',
+  )
+  assert.deepEqual(
+    (await db.query('select ubicacion_id from ejemplares order by id')).rows.map(
+      (e) => e.ubicacion_id,
+    ),
+    [1, 1, 1, 1, 2],
+  )
+  await editar(7, 7, ['Garcia'], [2, 1])
+  assert.deepEqual(
+    (await db.query('select ubicacion_id from ejemplares order by id')).rows.map(
+      (e) => e.ubicacion_id,
+    ),
+    [1, 1, 1, 1, 2, 2, 1],
+  )
+})
+
+test('ubicaciones ausentes o inexistentes revierten toda la creación y edición', async () => {
+  await assert.rejects(
+    db.query('select * from agregar_ejemplares_distribuidos(1,array[1,null]::bigint[])'),
+    /ubicación/,
+  )
+  await assert.rejects(
+    db.query('select * from agregar_ejemplares_distribuidos(1,array[1,999]::bigint[])'),
+    /foreign key/,
+  )
+  await assert.rejects(
+    db.query('insert into ejemplares(material_id) values(1)'),
+    /ubicación/,
+  )
+  await assert.rejects(editar(4, 4, ['Otro'], [1]), /cantidad de copias/)
+  await assert.rejects(editar(4, 4, ['Otro'], [1, 999]), /foreign key/)
+  // El fallo ocurre DESPUÉS de insertar las copias, y aun así se revierte todo.
+  await assert.rejects(editar(3, 4, ['Otro'], [2]), /disponibles_invalidos/)
+  assert.equal((await db.query('select count(*)::int as n from ejemplares')).rows[0].n, 2)
+  assert.equal(
+    (await db.query('select titulo from materiales where id=1')).rows[0].titulo,
+    'Original',
+  )
+  assert.equal((await db.query('select nombre from autores')).rows[0].nombre, 'García')
+})
+
+test('la RPC de lote exige ubicación y una copia existente se puede reubicar', async () => {
+  await assert.rejects(
+    db.query('select * from agregar_ejemplares(1,2,null)'),
+    /ubicación/,
+  )
+  await db.query('select * from agregar_ejemplares(1,2,2)')
+  await db.query('update ejemplares set ubicacion_id=2 where id=1')
+  assert.equal(
+    (await db.query('select ubicacion_id from ejemplares where id=1')).rows[0]
+      .ubicacion_id,
+    2,
+  )
+  await assert.rejects(
+    db.query('update ejemplares set ubicacion_id=null where id=1'),
+    /quitar la ubicación/,
+  )
 })
