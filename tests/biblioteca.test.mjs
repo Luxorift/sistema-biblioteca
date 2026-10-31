@@ -22,6 +22,13 @@ const migracionUbicaciones = await readFile(
   ),
   'utf8',
 )
+const migracionExcel = await readFile(
+  new URL(
+    '../supabase/migrations/20261031020000_importacion_exportacion_excel.sql',
+    import.meta.url,
+  ),
+  'utf8',
+)
 before(async () => {
   await db.exec(`
     create schema auth; create schema extensions;
@@ -54,6 +61,7 @@ before(async () => {
     `insert into tipos_material(nombre) values('Anterior'); insert into materiales(titulo,tipo_material_id) values('Copia anterior',1); insert into ejemplares(material_id) values(1);`,
   )
   await db.exec(migracionUbicaciones)
+  await db.exec(migracionExcel)
   assert.equal(
     (await db.query('select ubicacion_id from ejemplares')).rows[0].ubicacion_id,
     null,
@@ -64,6 +72,7 @@ before(async () => {
 })
 beforeEach(async () => {
   await db.exec(`reset role;
+    truncate public.importaciones_excel cascade;
     truncate public.prestamos, public.ejemplares, public.material_autores, public.materiales,
       public.autores, public.editoriales, public.personas, public.tipos_persona,
       public.tipos_material, public.ubicaciones restart identity cascade;
@@ -290,6 +299,8 @@ test('RLS y funciones bloquean a un usuario sin perfil y al rol anónimo', async
   assert.equal((await db.query('select * from materiales')).rows.length, 0)
   await assert.rejects(editar(2, 2), /Sin permiso/)
   await assert.rejects(db.query('select buscar_personas()'), /Sin permiso/)
+  await assert.rejects(db.query('select contexto_importacion_excel()'), /Sin permiso/)
+  await assert.rejects(db.query('select exportar_biblioteca_excel(false)'), /Sin permiso/)
   await assert.rejects(
     db.query("select consultar_credencial('PER-000001')"),
     /Sin permiso/,
@@ -391,6 +402,7 @@ test('la migración se puede volver a aplicar', async () => {
   await db.exec('reset role;')
   await db.exec(migration)
   await db.exec(migracionUbicaciones)
+  await db.exec(migracionExcel)
 })
 
 test('los días y atrasos usan el calendario de Lima', () => {
@@ -462,4 +474,127 @@ test('la RPC de lote exige ubicación y una copia existente se puede reubicar', 
     db.query('update ejemplares set ubicacion_id=null where id=1'),
     /quitar la ubicación/,
   )
+})
+
+const filaExcel = (cambios = {}) => ({
+  hoja: 'Inventario',
+  fila: 2,
+  titulo: 'Nuevo material',
+  autores: ['MINEDU'],
+  editorial: 'Editorial de prueba',
+  cantidad: 2,
+  anio: 2020,
+  estante: 'A',
+  nivel: 1,
+  tipo: 'Libro',
+  categoria: 'Comunicación',
+  material_existente_id: null,
+  originales: { titulo: 'Nuevo material', autor: 'Minedu' },
+  ...cambios,
+})
+const importarExcel = (filas, hash = 'a'.repeat(64), equivalencias = []) =>
+  db.query('select importar_inventario_excel($1,$2,$3::jsonb,$4::jsonb) as resultado', [
+    hash,
+    'inventario.xlsx',
+    JSON.stringify(filas),
+    JSON.stringify(equivalencias),
+  ])
+
+test('importa fichas y copias con ubicación, recuerda equivalencias y evita repetir el mismo archivo', async () => {
+  const filas = [filaExcel(), filaExcel({ fila: 3, cantidad: 1, estante: 'B', nivel: 2 })]
+  const primera = (
+    await importarExcel(filas, undefined, [
+      { campo: 'autor', origen: 'Minedu', destino: 'MINEDU' },
+    ])
+  ).rows[0].resultado
+  assert.equal(primera.materiales_nuevos, 1)
+  assert.equal(primera.ejemplares_creados, 3)
+  assert.equal(primera.ya_importado, false)
+  const segunda = (await importarExcel(filas)).rows[0].resultado
+  assert.equal(segunda.ya_importado, true)
+  assert.equal((await db.query('select count(*)::int as n from ejemplares')).rows[0].n, 5)
+  assert.equal(
+    (await db.query('select count(*)::int as n from importacion_filas')).rows[0].n,
+    2,
+  )
+  const contexto = (await db.query('select contexto_importacion_excel() as resultado'))
+    .rows[0].resultado
+  assert.equal(contexto.equivalencias[0].destino, 'MINEDU')
+  assert.equal(contexto.importaciones.length, 1)
+})
+
+test('una fila inválida revierte toda la importación, incluidas fichas, catálogos y el historial', async () => {
+  await assert.rejects(
+    importarExcel([filaExcel(), filaExcel({ fila: 3, nivel: 0 })]),
+    /check constraint/,
+  )
+  assert.equal((await db.query('select count(*)::int as n from materiales')).rows[0].n, 1)
+  assert.equal((await db.query('select count(*)::int as n from ejemplares')).rows[0].n, 2)
+  assert.equal(
+    (await db.query('select count(*)::int as n from importaciones_excel')).rows[0].n,
+    0,
+  )
+  assert.equal(
+    (await db.query('select count(*)::int as n from editoriales')).rows[0].n,
+    0,
+  )
+  const respuesta = (await importarExcel([filaExcel()])).rows[0].resultado
+  assert.equal(respuesta.ejemplares_creados, 2)
+})
+
+test('requiere confirmar las coincidencias del inventario y conserva los metadatos existentes', async () => {
+  const fila = filaExcel({
+    titulo: 'Original',
+    editorial: null,
+    anio: null,
+    autores: ['Otro autor'],
+  })
+  await assert.rejects(importarExcel([fila]), /inventario cambió/)
+  await importarExcel([{ ...fila, material_existente_id: 1 }])
+  assert.equal((await db.query('select count(*)::int as n from materiales')).rows[0].n, 1)
+  assert.equal(
+    (await db.query('select count(*)::int as n from material_autores')).rows[0].n,
+    1,
+  )
+  assert.equal(
+    (await db.query('select nombre from autores where id=1')).rows[0].nombre,
+    'García',
+  )
+})
+
+test('la exportación incluye más de mil copias, todas las personas y permisos separados para usuarios', async () => {
+  for (let i = 0; i < 3; i++) await db.query('select * from agregar_ejemplares(1,500,1)')
+  const datos = (await db.query('select exportar_biblioteca_excel(false) as resultado'))
+    .rows[0].resultado
+  assert.equal(datos.ejemplares.length, 1502)
+  assert.equal(datos.personas[0].codigo, 'PER-000001')
+  assert.equal(datos.personas[0].dni, '12345678')
+  assert.equal(datos.materiales[0].autores, 'García')
+  assert.equal('usuarios' in datos, false)
+  await db.exec(
+    `reset role; update perfiles set rol='bibliotecario' where id='${admin}'; set role authenticated;`,
+  )
+  try {
+    await assert.rejects(
+      db.query('select exportar_biblioteca_excel(true)'),
+      /Solo un administrador/,
+    )
+  } finally {
+    await db.exec(
+      `reset role; update perfiles set rol='admin' where id='${admin}'; set role authenticated;`,
+    )
+  }
+})
+
+test('rechaza metadatos incompatibles de filas destinadas a una misma ficha nueva', async () => {
+  await assert.rejects(
+    importarExcel([filaExcel(), filaExcel({ fila: 3, autores: ['Otro autor'] })]),
+    /metadatos diferentes/,
+  )
+  assert.equal(
+    (await db.query('select count(*)::int as n from importaciones_excel')).rows[0].n,
+    0,
+  )
+  assert.equal((await db.query('select count(*)::int as n from materiales')).rows[0].n, 1)
+  assert.equal((await db.query('select count(*)::int as n from ejemplares')).rows[0].n, 2)
 })

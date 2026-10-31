@@ -3,6 +3,7 @@ import {
   BookOpen,
   BookUp,
   FolderKanban,
+  FileSpreadsheet,
   UserCog,
   UsersRound,
   Wrench,
@@ -70,6 +71,14 @@ export const accionesInicio: AccionInicio[] = [
     ruta: '/catalogos',
     icono: FolderKanban,
     color: 'bg-lomo-vino',
+  },
+  {
+    id: 'excel',
+    titulo: 'Importar y exportar Excel',
+    descripcion: 'Revisa inventarios de Excel y descarga los datos de la biblioteca.',
+    ruta: '/datos',
+    icono: FileSpreadsheet,
+    color: 'bg-lomo-verde',
   },
   {
     id: 'usuarios',

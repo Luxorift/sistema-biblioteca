@@ -1,0 +1,1 @@
+export { IntercambioDatosPage } from './IntercambioDatosPage'

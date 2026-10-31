@@ -77,6 +77,12 @@ export function MaterialesPage({ tabInicial }: Props) {
         </nav>
       </div>
 
+      <Link
+        to="/datos"
+        className="text-primario inline-flex min-h-12 items-center font-bold underline"
+      >
+        Importar inventario o exportar Excel
+      </Link>
       {/* Contenido sin encabezado duplicado */}
       <section
         ref={contenidoRef}
