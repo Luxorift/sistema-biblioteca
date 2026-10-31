@@ -8,7 +8,7 @@ React Hook Form + Zod · Supabase.
 
 ## 1. Puesta en marcha
 
-Requisitos: Node.js 20.19 o superior (recomendado 22 LTS) y VS Code.
+Requisitos: Node.js 22.18 o superior (recomendado 24 LTS) y VS Code.
 
 ```bash
 npm install
@@ -23,8 +23,9 @@ Al abrir la carpeta en VS Code acepta instalar las extensiones recomendadas
 ## 2. Base de datos
 
 1. En Supabase abre **SQL Editor** y ejecuta `supabase/migrations/20261007000000_esquema_inicial.sql`.
-2. Crea tu usuario en **Authentication > Users** y copia su UUID.
-3. Dale un perfil (sin perfil activo, la seguridad de la base bloquea todo):
+2. Ejecuta después `supabase/migrations/20261031000000_consistencia_biblioteca.sql`.
+3. Crea tu usuario en **Authentication > Users** y copia su UUID.
+4. Dale un perfil (sin perfil activo, la seguridad de la base bloquea todo):
 
 ```sql
 insert into public.perfiles (id, nombre, rol)
@@ -50,14 +51,14 @@ supabase/migrations/   SQL de la base de datos, versionado
 
 Dentro de cada feature:
 
-| Archivo | Para qué sirve |
-|---|---|
-| `api.ts` | Las llamadas a Supabase de esa feature. Es el único lugar donde se toca la base. |
-| `types.ts` | Tipos de TypeScript del dominio. |
-| `use*.ts` | Hooks: lógica reutilizable (consultas, estado). |
-| `*Page.tsx` | Una pantalla completa. Solo arma componentes y hooks. |
-| `components/` | Piezas que solo usa esa feature. |
-| `index.ts` | Lo único que las otras partes pueden importar de la feature. |
+| Archivo       | Para qué sirve                                                                   |
+| ------------- | -------------------------------------------------------------------------------- |
+| `api.ts`      | Las llamadas a Supabase de esa feature. Es el único lugar donde se toca la base. |
+| `types.ts`    | Tipos de TypeScript del dominio.                                                 |
+| `use*.ts`     | Hooks: lógica reutilizable (consultas, estado).                                  |
+| `*Page.tsx`   | Una pantalla completa. Solo arma componentes y hooks.                            |
+| `components/` | Piezas que solo usa esa feature.                                                 |
+| `index.ts`    | Lo único que las otras partes pueden importar de la feature.                     |
 
 ## 4. Reglas para mantenerlo ordenado
 
@@ -87,13 +88,14 @@ Dentro de cada feature:
 
 ## 7. Comandos
 
-| Comando | Qué hace |
-|---|---|
-| `npm run dev` | Servidor de desarrollo |
-| `npm run build` | Revisa tipos y genera la versión de producción en `dist/` |
-| `npm run lint` | Busca errores y malas prácticas |
-| `npm run format` | Da formato a todo el código |
-| `npm run typecheck` | Solo revisa tipos |
+| Comando             | Qué hace                                                  |
+| ------------------- | --------------------------------------------------------- |
+| `npm run dev`       | Servidor de desarrollo                                    |
+| `npm run build`     | Revisa tipos y genera la versión de producción en `dist/` |
+| `npm run lint`      | Busca errores y malas prácticas                           |
+| `npm run format`    | Da formato a todo el código                               |
+| `npm run typecheck` | Solo revisa tipos                                         |
+| `npm test`          | Pruebas de regresión SQL, fechas y creación de usuarios   |
 
 Tipos de la base (opcional, cuando quieras autocompletado de tablas):
 `npx supabase gen types typescript --project-id TU_ID > src/types/database.types.ts`
@@ -113,6 +115,91 @@ Flujo de ramas: `main` es lo que usa el bibliotecario. Cada cambio nuevo va en s
 
 ## 9. Estado actual
 
-Hecho: login, protección de rutas por sesión y rol, perfil, marco de pantallas e inicio.
-Pendiente: buscar, agregar material, prestar, devolver, personas, etiquetas con código de barras/QR
-y administración de usuarios. Las rutas ya existen y muestran "Esta sección se está construyendo".
+Implementado: sesión y roles, búsqueda/registro/edición de materiales, ejemplares,
+personas, préstamos, devoluciones, historial, catálogos, etiquetas con códigos de
+barras/QR y administración de usuarios. Las pantallas se cargan por ruta.
+
+La edición de materiales se realiza con una RPC transaccional. PostgreSQL valida
+los estados de ejemplares, protege el historial e impide prestar a personas
+inactivas o desactivarlas con préstamos abiertos. Primero se registra la devolución
+y después se cambia el estado físico del ejemplar si necesita reparación, baja o
+registro de pérdida. Todas las fechas del negocio usan `America/Lima`.
+
+La búsqueda de personas se ejecuta en servidor y muestra páginas de 25 registros.
+Los cambios de inventario y circulación invalidan las consultas relacionadas.
+
+## 10. Actualizar una base existente
+
+1. En el SQL Editor de Supabase ejecuta **solo**
+   `supabase/migrations/20261031000000_consistencia_biblioteca.sql` si ya aplicaste el
+   esquema inicial. No vuelvas a ejecutar el inicial sobre tablas existentes.
+2. La migración conserva los datos. Reconcilia los estados de ejemplares con los
+   préstamos abiertos. Si hay varios préstamos abiertos para un ejemplar, falla y
+   revierte la migración; primero hay que corregir esos registros.
+3. Vuelve a desplegar la función: `supabase functions deploy crear-usuario`.
+4. Publica el frontend actualizado después de aplicar la migración. Sus pantallas
+   de edición, devolución y personas requieren las nuevas RPC.
+5. Comprueba con una cuenta de prueba: editar material, prestar, devolver y buscar
+   una persona. No se requieren cambios en las variables públicas del frontend.
+
+El export de tablas del panel de Supabase sirve como referencia; no reemplaza las
+migraciones porque no incluye todas las funciones, políticas ni triggers.
+
+## 11. Verificación local
+
+Requisitos para las pruebas: Node.js 22.18+ (recomendado Node.js 24 LTS).
+Ejecuta `npm test`, `npm run lint` y `npm run build`.
+
+Las pruebas SQL ejecutan las dos migraciones completas en PostgreSQL embebido
+(PGlite), incluidas las extensiones `unaccent` y `pg_trgm`. Simulan el esquema
+mínimo de Auth y el rol `authenticated`; comprueban RLS, rollback, estados,
+préstamos, devoluciones y búsqueda paginada sin acceder al Supabase remoto.
+Las pruebas de Edge Function ejecutan el handler con clientes simulados, verifican
+la compensación ante errores y preservación de contraseñas. No sustituyen una
+prueba de despliegue contra Supabase ni simulan sesiones concurrentes.
+
+## 12. Credenciales de biblioteca para personas
+
+La migración `20261031000000_consistencia_biblioteca.sql` incluye `personas.codigo`:
+un código único, obligatorio y generado automáticamente como `PER-000001`, para
+alumnos, docentes y cualquier otro tipo de persona. También se asigna a las personas
+existentes. No contiene el DNI ni cambia al editar nombres, tipo o estado; el
+identificador de la persona queda protegido. Los IDs de más de seis dígitos se
+conservan completos. Para imprimir un código de barras, codifica exactamente este
+valor como CODE128 y muestra el mismo texto debajo para poder digitarlo.
+
+Si ya ejecutaste la versión anterior de esta migración en el SQL Editor, puedes
+volver a ejecutar el archivo actualizado: las nuevas columnas, índices y funciones
+se crean sin duplicar las credenciales. No borres personas para reimprimirlas: usa
+su código existente.
+
+La RPC `consultar_credencial(p_codigo text)` acepta el código digitado o escaneado,
+normaliza mayúsculas y espacios/saltos de línea en los extremos, y busca una
+coincidencia exacta. Devuelve `null` si no existe; exige personal autenticado con
+perfil activo. No acepta un código de libro ni el DNI como sustituto de la credencial.
+
+Ejemplo de integración desde una API del frontend:
+
+```ts
+const { data, error } = await supabase.rpc('consultar_credencial', {
+  p_codigo: 'PER-000001',
+})
+```
+
+La respuesta contiene:
+
+- `persona`: ID, código, nombres, apellidos, DNI, tipo y estado activo.
+- `resumen`: `prestamos_pendientes`, `prestamos_atrasados` y `max_dias_atraso`.
+- `prestamos_pendientes`: ID del préstamo, ID y código del ejemplar, material,
+  título, fechas, `esta_atrasado` y `dias_atraso`.
+
+Un préstamo vence al terminar su fecha límite en Perú; los préstamos sin fecha
+límite no se consideran atrasados. Los devueltos se excluyen de los pendientes.
+Las personas inactivas se reconocen para informar al bibliotecario, pero la base
+sigue impidiendo registrarles nuevos préstamos. La consulta no modifica datos:
+para devolver un libro, se confirma el préstamo elegido y se usa la RPC existente
+`devolver_prestamo(p_prestamo_id, p_fecha)`.
+
+`buscar_personas` también devuelve el código y permite buscarlo. Este cambio deja
+lista la base de datos; la pantalla de escaneo y la impresión de credenciales de
+personas todavía deben conectarse a estas consultas en el frontend.

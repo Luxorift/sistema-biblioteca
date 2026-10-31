@@ -13,10 +13,12 @@ export function useRegistrarDevolucion() {
   return useMutation({
     mutationFn: ({ prestamo, fecha }: { prestamo: PrestamoPendiente; fecha: string }) =>
       registrarDevolucion(prestamo, fecha),
-    onSuccess: () => {
-      cliente.invalidateQueries({ queryKey: ['prestamos'] })
-      cliente.invalidateQueries({ queryKey: ['ejemplares'] })
-      cliente.invalidateQueries({ queryKey: ['materiales'] })
-    },
+    onSuccess: () =>
+      Promise.all([
+        cliente.invalidateQueries({ queryKey: ['prestamos'] }),
+        cliente.invalidateQueries({ queryKey: ['ejemplares'] }),
+        cliente.invalidateQueries({ queryKey: ['materiales'] }),
+        cliente.invalidateQueries({ queryKey: ['personas'] }),
+      ]),
   })
 }

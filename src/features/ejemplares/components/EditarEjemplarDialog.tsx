@@ -56,7 +56,7 @@ export function EditarEjemplarDialog({
     setErrorGuardado(null)
 
     // Validar si intenta marcar como disponible un ejemplar prestado
-    if (estaPrestado && datos.estado === 'disponible') {
+    if (estaPrestado && datos.estado !== 'prestado') {
       setErrorGuardado(
         'Este libro tiene un préstamo abierto. Para registrar su devolución, ve a la sección Devolver.',
       )
@@ -83,7 +83,7 @@ export function EditarEjemplarDialog({
     } catch (error) {
       if (error instanceof ErrorEjemplarPrestadoNoDirecto) {
         setErrorGuardado(
-          'No puedes marcar como disponible un ejemplar prestado sin registrar su devolución en Devolver.',
+          'No puedes cambiar el estado de un ejemplar prestado sin registrar su devolución en Devolver.',
         )
       } else {
         setErrorGuardado(
@@ -138,9 +138,15 @@ export function EditarEjemplarDialog({
                 <option value="disponible" disabled={estaPrestado}>
                   Disponible {estaPrestado ? '(prestado actualmente)' : ''}
                 </option>
-                <option value="en_reparacion">En reparación (dañado o deshojado)</option>
-                <option value="perdido">Perdido / extraviado</option>
-                <option value="baja">De baja (retirado del inventario)</option>
+                <option value="en_reparacion" disabled={estaPrestado}>
+                  En reparación (dañado o deshojado)
+                </option>
+                <option value="perdido" disabled={estaPrestado}>
+                  Perdido / extraviado
+                </option>
+                <option value="baja" disabled={estaPrestado}>
+                  De baja (retirado del inventario)
+                </option>
                 {estaPrestado && <option value="prestado">Prestado</option>}
               </Select>
               {estaPrestado && (
@@ -201,25 +207,28 @@ export function EditarEjemplarDialog({
         {confirmar && (
           <div className="space-y-5">
             <p>
-              Vas a cambiar los datos de la copia <strong>{ejemplar.codigo}</strong> ({ejemplar.titulo}).
+              Vas a cambiar los datos de la copia <strong>{ejemplar.codigo}</strong> (
+              {ejemplar.titulo}).
             </p>
 
             {confirmar.estado === 'baja' && (
               <Alert>
-                Advertencia: Dar de baja este libro lo retirará del inventario activo.
-                No se podrá prestar a nadie.
+                Advertencia: Dar de baja este libro lo retirará del inventario activo. No
+                se podrá prestar a nadie.
               </Alert>
             )}
 
             {confirmar.estado === 'perdido' && (
               <Alert>
-                Advertencia: Se registrará el libro como perdido. Quedará archivado con ese estado.
+                Advertencia: Se registrará el libro como perdido. Quedará archivado con
+                ese estado.
               </Alert>
             )}
 
             {confirmar.estado === 'en_reparacion' && (
               <Alert>
-                El libro pasará a reparación. No estará disponible para nuevos préstamos hasta que se repare.
+                El libro pasará a reparación. No estará disponible para nuevos préstamos
+                hasta que se repare.
               </Alert>
             )}
 

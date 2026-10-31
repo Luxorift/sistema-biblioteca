@@ -1,3 +1,4 @@
+import { fechaBiblioteca, diasEntreFechas, instantePrestamo } from '@/lib/fechas'
 import { supabase } from '@/lib/supabase'
 import type {
   CopiaDisponible,
@@ -179,16 +180,14 @@ export async function registrarPrestamo(
   copias: CopiaDisponible[],
   persona: PersonaPrestataria,
 ): Promise<PrestamoConfirmado> {
-  const { error } = await supabase
-    .from('prestamos')
-    .insert(
-      copias.map((copia) => ({
-        ejemplar_id: copia.id,
-        persona_id: datos.personaId,
-        fecha_prestamo: `${datos.fechaPrestamo}T12:00:00`,
-        fecha_limite: datos.tieneFechaLimite ? datos.fechaLimite : null,
-      })),
-    )
+  const { error } = await supabase.from('prestamos').insert(
+    copias.map((copia) => ({
+      ejemplar_id: copia.id,
+      persona_id: datos.personaId,
+      fecha_prestamo: instantePrestamo(datos.fechaPrestamo),
+      fecha_limite: datos.tieneFechaLimite ? datos.fechaLimite : null,
+    })),
+  )
   if (error) throw error
   return {
     codigos: copias.map((copia) => copia.codigo),
@@ -235,17 +234,14 @@ interface FilaTipoPersona {
   nombre: string
 }
 
-const MS_POR_DIA = 1000 * 60 * 60 * 24
-
 function calcularAtraso(
   fechaLimite: string | null,
   fechaDevolucion: string | null,
   hoy: Date,
 ): { estaAtrasado: boolean; diasAtraso: number } {
   if (!fechaLimite) return { estaAtrasado: false, diasAtraso: 0 }
-  const limite = new Date(fechaLimite)
-  const referencia = fechaDevolucion ? new Date(fechaDevolucion) : hoy
-  const dias = Math.floor((referencia.getTime() - limite.getTime()) / MS_POR_DIA)
+  const referencia = fechaBiblioteca(fechaDevolucion ?? hoy)
+  const dias = diasEntreFechas(fechaLimite, referencia)
   return {
     estaAtrasado: dias > 0,
     diasAtraso: Math.max(0, dias),
@@ -254,18 +250,21 @@ function calcularAtraso(
 
 export async function obtenerPrestamosHistoricos(): Promise<PrestamoHistorico[]> {
   // prestamos no tiene FK directa a materiales: pasa por ejemplares.
-  const [resPrestamos, resEjemplares, resMateriales, resPersonas, resTipos] = await Promise.all([
-    supabase
-      .from('prestamos')
-      .select('id, ejemplar_id, persona_id, fecha_prestamo, fecha_limite, fecha_devolucion')
-      .order('fecha_prestamo', { ascending: false }),
-    supabase.from('ejemplares').select('id, codigo, material_id'),
-    supabase.from('materiales').select('id, titulo'),
-    supabase
-      .from('personas')
-      .select('id, nombres, apellido_paterno, apellido_materno, dni, tipo_persona_id'),
-    supabase.from('tipos_persona').select('id, nombre'),
-  ])
+  const [resPrestamos, resEjemplares, resMateriales, resPersonas, resTipos] =
+    await Promise.all([
+      supabase
+        .from('prestamos')
+        .select(
+          'id, ejemplar_id, persona_id, fecha_prestamo, fecha_limite, fecha_devolucion',
+        )
+        .order('fecha_prestamo', { ascending: false }),
+      supabase.from('ejemplares').select('id, codigo, material_id'),
+      supabase.from('materiales').select('id, titulo'),
+      supabase
+        .from('personas')
+        .select('id, nombres, apellido_paterno, apellido_materno, dni, tipo_persona_id'),
+      supabase.from('tipos_persona').select('id, nombre'),
+    ])
 
   for (const res of [resPrestamos, resEjemplares, resMateriales, resPersonas, resTipos]) {
     if (res.error) throw res.error
@@ -277,9 +276,7 @@ export async function obtenerPrestamosHistoricos(): Promise<PrestamoHistorico[]>
   const materialPorId = new Map(
     (resMateriales.data as FilaMaterial[]).map((m) => [m.id, m]),
   )
-  const personaPorId = new Map(
-    (resPersonas.data as FilaPersona[]).map((p) => [p.id, p]),
-  )
+  const personaPorId = new Map((resPersonas.data as FilaPersona[]).map((p) => [p.id, p]))
   const tipoPorId = new Map(
     (resTipos.data as FilaTipoPersona[]).map((t) => [t.id, t.nombre]),
   )
@@ -311,9 +308,11 @@ export async function obtenerPrestamosHistoricos(): Promise<PrestamoHistorico[]>
         persona: nombreCompleto,
         dni: persona.dni,
         tipoPersona: tipoPorId.get(persona.tipo_persona_id) ?? 'Sin tipo',
-        fechaPrestamo: fila.fecha_prestamo.slice(0, 10),
+        fechaPrestamo: fechaBiblioteca(fila.fecha_prestamo),
         fechaLimite: fila.fecha_limite ? fila.fecha_limite.slice(0, 10) : null,
-        fechaDevolucion: fila.fecha_devolucion ? fila.fecha_devolucion.slice(0, 10) : null,
+        fechaDevolucion: fila.fecha_devolucion
+          ? fechaBiblioteca(fila.fecha_devolucion)
+          : null,
         estaAtrasado,
         diasAtraso,
       },

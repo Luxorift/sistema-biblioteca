@@ -68,7 +68,9 @@ serve(async (req: Request) => {
 
     if (llamadorAuthError || !llamadorAuth) {
       return new Response(
-        JSON.stringify({ error: 'Sesión no válida o expirada. Vuelve a iniciar sesión.' }),
+        JSON.stringify({
+          error: 'Sesión no válida o expirada. Vuelve a iniciar sesión.',
+        }),
         {
           status: 401,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -106,10 +108,11 @@ serve(async (req: Request) => {
     }
 
     // 2. Parsear y validar los datos del nuevo usuario
-    const body: CrearUsuarioBody = await req.json().catch(() => ({}))
-    const email = body.email?.trim().toLowerCase()
-    const password = body.password?.trim()
-    const nombre = body.nombre?.trim()
+    const payload: unknown = await req.json().catch(() => null)
+    const body: CrearUsuarioBody = payload && typeof payload === 'object' ? payload : {}
+    const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : ''
+    const password = typeof body.password === 'string' ? body.password : ''
+    const nombre = typeof body.nombre === 'string' ? body.nombre.trim() : ''
     const rol = body.rol
 
     if (!email || !email.includes('@')) {
@@ -188,11 +191,21 @@ serve(async (req: Request) => {
       .single()
 
     if (errorPerfil) {
+      const { error: errorLimpieza } = await supabaseAdmin.auth.admin.deleteUser(
+        usuarioCreado.user.id,
+      )
+      if (errorLimpieza) {
+        console.error(
+          'No se pudo revertir la cuenta sin perfil',
+          usuarioCreado.user.id,
+          errorLimpieza.message,
+        )
+      }
       return new Response(
         JSON.stringify({
-          error:
-            'Usuario creado en autenticación, pero falló al crear el perfil: ' +
-            errorPerfil.message,
+          error: errorLimpieza
+            ? 'No se pudo completar el registro. Solicita al administrador revisar la cuenta antes de reintentar.'
+            : 'No se pudo crear el perfil. La cuenta se revirtió; puedes intentar nuevamente.',
         }),
         {
           status: 500,

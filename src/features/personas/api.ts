@@ -50,39 +50,40 @@ export async function crearTipoPersona(nombre: string): Promise<TipoPersona> {
   return data as TipoPersona
 }
 
-export async function obtenerPersonas(): Promise<Persona[]> {
-  const [personasConsulta, tiposConsulta, prestamosConsulta] = await Promise.all([
-    supabase
-      .from('personas')
-      .select(
-        'id, tipo_persona_id, nombres, apellido_paterno, apellido_materno, dni, correo, activo',
-      )
-      .order('apellido_paterno')
-      .limit(100),
-    supabase.from('tipos_persona').select('id, nombre'),
-    supabase
-      .from('prestamos')
-      .select('persona_id')
-      .is('fecha_devolucion', null),
-  ])
-  if (personasConsulta.error) throw personasConsulta.error
-  if (tiposConsulta.error) throw tiposConsulta.error
-  if (prestamosConsulta.error) throw prestamosConsulta.error
+export interface FiltrosPersonas {
+  buscar: string
+  tipo: string
+  estado: string
+  correo: string
+  pagina: number
+}
 
-  const tiposPorId = new Map(
-    (tiposConsulta.data ?? []).map((tipo) => [tipo.id, tipo.nombre]),
-  )
-  const prestamosPorPersona = new Map<number, number>()
-  for (const prestamo of (prestamosConsulta.data ?? []) as { persona_id: number }[]) {
-    prestamosPorPersona.set(
-      prestamo.persona_id,
-      (prestamosPorPersona.get(prestamo.persona_id) ?? 0) + 1,
-    )
+export async function obtenerPersonas(
+  filtros: FiltrosPersonas,
+): Promise<{ personas: Persona[]; total: number }> {
+  const { data, error } = await supabase.rpc('buscar_personas', {
+    p_buscar: filtros.buscar.trim(),
+    p_tipo: filtros.tipo ? Number(filtros.tipo) : null,
+    p_activo: filtros.estado ? filtros.estado === 'activo' : null,
+    p_correo: filtros.correo ? filtros.correo === 'con-correo' : null,
+    p_pagina: filtros.pagina,
+    p_tamano: 25,
+  })
+  if (error) throw error
+  const resultado = data as {
+    total: number
+    personas: (FilaPersona & { tipo_persona: string; prestamos_activos: number })[]
   }
-
-  return ((personasConsulta.data ?? []) as FilaPersona[]).map((fila) =>
-    convertirPersona(fila, tiposPorId, prestamosPorPersona.get(fila.id) ?? 0),
-  )
+  return {
+    total: resultado.total,
+    personas: resultado.personas.map((fila) =>
+      convertirPersona(
+        fila,
+        new Map([[fila.tipo_persona_id, fila.tipo_persona]]),
+        fila.prestamos_activos,
+      ),
+    ),
+  }
 }
 
 export async function crearPersona(datos: DatosPersona): Promise<Persona> {

@@ -1,3 +1,4 @@
+import { fechaBiblioteca } from '@/lib/fechas'
 import { z } from 'zod'
 
 export const esquemaPrestamo = z
@@ -18,7 +19,7 @@ export const esquemaPrestamo = z
         path: ['cantidad'],
         message: 'Elige la misma cantidad de copias que indicaste.',
       })
-    if (datos.fechaPrestamo > new Date().toISOString().slice(0, 10))
+    if (datos.fechaPrestamo > fechaBiblioteca())
       contexto.addIssue({
         code: 'custom',
         path: ['fechaPrestamo'],

@@ -1,3 +1,4 @@
+import { fechaBiblioteca } from '@/lib/fechas'
 import type { UseFormReturn } from 'react-hook-form'
 import { Button } from '@/components/ui/Button'
 import { DatePicker } from '@/components/ui/DatePicker'
@@ -100,7 +101,7 @@ export function FormularioPrestamo({
         <h2 className="text-xl font-bold">5. Fechas</h2>
         <DatePicker
           label="Fecha de préstamo"
-          max={new Date().toISOString().slice(0, 10)}
+          max={fechaBiblioteca()}
           value={watch('fechaPrestamo')}
           onChange={(valor) =>
             formulario.setValue('fechaPrestamo', valor, { shouldValidate: true })

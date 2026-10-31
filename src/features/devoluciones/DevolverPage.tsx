@@ -1,3 +1,4 @@
+import { fechaBiblioteca } from '@/lib/fechas'
 import { ArrowLeft } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
@@ -16,7 +17,7 @@ interface DevolverPageProps {
 }
 
 export function DevolverPage({ ocultarEncabezado = false }: DevolverPageProps) {
-  const hoy = new Date().toISOString().slice(0, 10)
+  const hoy = fechaBiblioteca()
   const prestamos = usePrestamosPendientes()
   const registrar = useRegistrarDevolucion()
   const [buscar, setBuscar] = useState('')
@@ -74,7 +75,7 @@ export function DevolverPage({ ocultarEncabezado = false }: DevolverPageProps) {
           </div>
           <Link
             to="/"
-            className="border-borde inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border-2 bg-white px-5 text-lg font-bold transition-all hover:bg-papel active:scale-[0.98]"
+            className="border-borde hover:bg-papel inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border-2 bg-white px-5 text-lg font-bold transition-all active:scale-[0.98]"
           >
             <ArrowLeft aria-hidden size={20} />
             Volver al inicio

@@ -1,14 +1,15 @@
 {
   "name": "biblioteca-web",
   "version": "0.1.0",
-  "description": "Sistema de gestión de inventario de biblioteca",
+  "description": "Sistema de gestiÃ³n de inventario de biblioteca",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "lint": "eslint .",
     "typecheck": "tsc -b",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "test": "node --test tests/*.test.mjs"
   },
   "private": "true",
   "type": "module",
@@ -31,6 +32,7 @@
     "zod": "^4.6.5"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.13",
     "@eslint/js": "^10.0.1",
     "@tailwindcss/vite": "^4.3.3",
     "@types/node": "^26.6.4",

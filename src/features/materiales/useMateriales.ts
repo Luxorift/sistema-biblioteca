@@ -14,7 +14,12 @@ export function useRegistrarMaterial() {
   const cliente = useQueryClient()
   return useMutation({
     mutationFn: registrarMaterial,
-    onSuccess: () => cliente.invalidateQueries({ queryKey: ['materiales'] }),
+    onSuccess: () =>
+      Promise.all(
+        ['materiales', 'ejemplares', 'etiquetas', 'catalogos'].map((key) =>
+          cliente.invalidateQueries({ queryKey: [key] }),
+        ),
+      ),
   })
 }
 export function useAgregarEjemplares() {
@@ -29,7 +34,12 @@ export function useAgregarEjemplares() {
       cantidad: number
       ubicacionId: number | null
     }) => agregarEjemplares(materialId, cantidad, ubicacionId),
-    onSuccess: () => cliente.invalidateQueries({ queryKey: ['materiales'] }),
+    onSuccess: () =>
+      Promise.all(
+        ['materiales', 'ejemplares', 'etiquetas', 'catalogos'].map((key) =>
+          cliente.invalidateQueries({ queryKey: [key] }),
+        ),
+      ),
   })
 }
 export type { DatosMaterial }

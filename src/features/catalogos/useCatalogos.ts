@@ -82,13 +82,17 @@ export function useActualizarCatalogoSimple(tabla: TipoCatalogoSimple) {
   return useMutation({
     mutationFn: ({ id, nombre }: { id: number; nombre: string }) =>
       actualizarCatalogoSimple(tabla, id, nombre),
-    onSuccess: () => {
-      cliente.invalidateQueries({ queryKey: ['catalogos', tabla] })
-      cliente.invalidateQueries({ queryKey: ['materiales'] })
-      if (tabla === 'editoriales') {
-        cliente.invalidateQueries({ queryKey: ['catalogos', 'editoriales'] })
-      }
-    },
+    onSuccess: () =>
+      Promise.all(
+        [
+          'catalogos',
+          'materiales',
+          'ejemplares',
+          'personas',
+          'prestamos',
+          'etiquetas',
+        ].map((key) => cliente.invalidateQueries({ queryKey: [key] })),
+      ),
   })
 }
 
@@ -117,10 +121,12 @@ export function useActualizarUbicacion() {
       estante: string
       nivel: number
     }) => actualizarUbicacion(id, estante, nivel),
-    onSuccess: () => {
-      cliente.invalidateQueries({ queryKey: ['catalogos', 'ubicaciones'] })
-      cliente.invalidateQueries({ queryKey: ['ejemplares'] })
-    },
+    onSuccess: () =>
+      Promise.all(
+        ['catalogos', 'materiales', 'ejemplares', 'etiquetas'].map((key) =>
+          cliente.invalidateQueries({ queryKey: [key] }),
+        ),
+      ),
   })
 }
 
