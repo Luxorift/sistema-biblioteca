@@ -1,3 +1,4 @@
+import { fechaBiblioteca } from '@/lib/fechas'
 import { supabase } from '@/lib/supabase'
 import type { DevolucionConfirmada, PrestamoPendiente } from './types'
 
@@ -70,7 +71,7 @@ export async function obtenerPrestamosPendientes(): Promise<PrestamoPendiente[]>
           ),
         dni: persona.dni,
         tipoPersona: tipoPorId.get(persona.tipo_persona_id) ?? 'Sin tipo',
-        fechaPrestamo: fila.fecha_prestamo.slice(0, 10),
+        fechaPrestamo: fechaBiblioteca(fila.fecha_prestamo),
         fechaLimite: fila.fecha_limite,
       },
     ]
@@ -81,11 +82,10 @@ export async function registrarDevolucion(
   prestamo: PrestamoPendiente,
   fechaDevolucion: string,
 ): Promise<DevolucionConfirmada> {
-  const { error } = await supabase
-    .from('prestamos')
-    .update({ fecha_devolucion: `${fechaDevolucion}T12:00:00` })
-    .eq('id', prestamo.id)
-    .is('fecha_devolucion', null)
+  const { error } = await supabase.rpc('devolver_prestamo', {
+    p_prestamo_id: prestamo.id,
+    p_fecha: fechaDevolucion,
+  })
   if (error) throw error
   return {
     codigo: prestamo.codigo,

@@ -19,12 +19,11 @@ export function useActualizarEstadoEjemplar() {
       ejemplarId: number
       datos: DatosActualizarEjemplar
     }) => actualizarEstadoEjemplar(ejemplarId, datos),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['ejemplares'] })
-      void queryClient.invalidateQueries({ queryKey: ['materiales'] })
-      void queryClient.invalidateQueries({ queryKey: ['buscar-materiales'] })
-      void queryClient.invalidateQueries({ queryKey: ['materiales-prestables'] })
-      void queryClient.invalidateQueries({ queryKey: ['etiquetas'] })
-    },
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['ejemplares'] }),
+        queryClient.invalidateQueries({ queryKey: ['materiales'] }),
+        queryClient.invalidateQueries({ queryKey: ['etiquetas'] }),
+      ]),
   })
 }

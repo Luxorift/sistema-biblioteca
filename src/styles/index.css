@@ -108,3 +108,37 @@
     size: auto;
   }
 }
+
+/* Superficie de impresión independiente del tema de la aplicación. */
+.credenciales-hoja {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 85.6mm), 85.6mm));
+  gap: 6mm;
+}
+.credencial-biblioteca {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 54mm;
+  padding: 4mm;
+  border: 0.3mm solid #111111;
+  border-radius: 3mm;
+  background: #ffffff !important;
+  color: #111111 !important;
+  break-inside: avoid;
+  overflow-wrap: anywhere;
+}
+.credencial-barras {
+  display: flex;
+  justify-content: center;
+  padding: 2mm;
+  background: #ffffff !important;
+}
+@media print {
+  .credencial-biblioteca {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+  .credenciales-hoja {
+    grid-template-columns: repeat(2, 85.6mm);
+  }
+}

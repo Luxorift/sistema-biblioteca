@@ -1,8 +1,15 @@
 import { supabase } from '@/lib/supabase'
-import type { DatosActualizarPersona, DatosPersona, Persona, TipoPersona } from './types'
+import type {
+  ConsultaCredencial,
+  DatosActualizarPersona,
+  DatosPersona,
+  Persona,
+  TipoPersona,
+} from './types'
 
 type FilaPersona = {
   id: number
+  codigo: string
   tipo_persona_id: number
   nombres: string
   apellido_paterno: string
@@ -19,6 +26,7 @@ function convertirPersona(
 ): Persona {
   return {
     id: fila.id,
+    codigo: fila.codigo,
     tipoPersonaId: fila.tipo_persona_id,
     tipoPersona: tiposPorId.get(fila.tipo_persona_id) ?? 'Sin tipo',
     nombres: fila.nombres,
@@ -50,39 +58,40 @@ export async function crearTipoPersona(nombre: string): Promise<TipoPersona> {
   return data as TipoPersona
 }
 
-export async function obtenerPersonas(): Promise<Persona[]> {
-  const [personasConsulta, tiposConsulta, prestamosConsulta] = await Promise.all([
-    supabase
-      .from('personas')
-      .select(
-        'id, tipo_persona_id, nombres, apellido_paterno, apellido_materno, dni, correo, activo',
-      )
-      .order('apellido_paterno')
-      .limit(100),
-    supabase.from('tipos_persona').select('id, nombre'),
-    supabase
-      .from('prestamos')
-      .select('persona_id')
-      .is('fecha_devolucion', null),
-  ])
-  if (personasConsulta.error) throw personasConsulta.error
-  if (tiposConsulta.error) throw tiposConsulta.error
-  if (prestamosConsulta.error) throw prestamosConsulta.error
+export interface FiltrosPersonas {
+  buscar: string
+  tipo: string
+  estado: string
+  correo: string
+  pagina: number
+}
 
-  const tiposPorId = new Map(
-    (tiposConsulta.data ?? []).map((tipo) => [tipo.id, tipo.nombre]),
-  )
-  const prestamosPorPersona = new Map<number, number>()
-  for (const prestamo of (prestamosConsulta.data ?? []) as { persona_id: number }[]) {
-    prestamosPorPersona.set(
-      prestamo.persona_id,
-      (prestamosPorPersona.get(prestamo.persona_id) ?? 0) + 1,
-    )
+export async function obtenerPersonas(
+  filtros: FiltrosPersonas,
+): Promise<{ personas: Persona[]; total: number }> {
+  const { data, error } = await supabase.rpc('buscar_personas', {
+    p_buscar: filtros.buscar.trim(),
+    p_tipo: filtros.tipo ? Number(filtros.tipo) : null,
+    p_activo: filtros.estado ? filtros.estado === 'activo' : null,
+    p_correo: filtros.correo ? filtros.correo === 'con-correo' : null,
+    p_pagina: filtros.pagina,
+    p_tamano: 25,
+  })
+  if (error) throw error
+  const resultado = data as {
+    total: number
+    personas: (FilaPersona & { tipo_persona: string; prestamos_activos: number })[]
   }
-
-  return ((personasConsulta.data ?? []) as FilaPersona[]).map((fila) =>
-    convertirPersona(fila, tiposPorId, prestamosPorPersona.get(fila.id) ?? 0),
-  )
+  return {
+    total: resultado.total,
+    personas: resultado.personas.map((fila) =>
+      convertirPersona(
+        fila,
+        new Map([[fila.tipo_persona_id, fila.tipo_persona]]),
+        fila.prestamos_activos,
+      ),
+    ),
+  }
 }
 
 export async function crearPersona(datos: DatosPersona): Promise<Persona> {
@@ -97,7 +106,7 @@ export async function crearPersona(datos: DatosPersona): Promise<Persona> {
       correo: datos.correo.trim() || null,
     })
     .select(
-      'id, tipo_persona_id, nombres, apellido_paterno, apellido_materno, dni, correo, activo',
+      'id, codigo, tipo_persona_id, nombres, apellido_paterno, apellido_materno, dni, correo, activo',
     )
     .single()
   if (error) throw error
@@ -148,7 +157,7 @@ export async function actualizarPersona(
     })
     .eq('id', personaId)
     .select(
-      'id, tipo_persona_id, nombres, apellido_paterno, apellido_materno, dni, correo, activo',
+      'id, codigo, tipo_persona_id, nombres, apellido_paterno, apellido_materno, dni, correo, activo',
     )
     .single()
   if (error) throw error
@@ -172,4 +181,56 @@ export async function actualizarPersona(
     new Map([[tipoConsulta.data.id, tipoConsulta.data.nombre]]),
     prestamosConsulta.count ?? 0,
   )
+}
+
+// La consulta solo reconoce la credencial; las operaciones requieren confirmación.
+export async function consultarCredencial(
+  codigo: string,
+): Promise<ConsultaCredencial | null> {
+  const { data, error } = await supabase.rpc('consultar_credencial', {
+    p_codigo: codigo.trim().toUpperCase(),
+  })
+  if (error) throw error
+  if (!data) return null
+  const fila = data as {
+    persona: Omit<FilaPersona, 'correo'> & { tipo_persona: string }
+    resumen: {
+      prestamos_pendientes: number
+      prestamos_atrasados: number
+      max_dias_atraso: number
+    }
+    prestamos_pendientes: {
+      prestamo_id: number
+      codigo_ejemplar: string
+      titulo: string
+      fecha_prestamo: string
+      fecha_limite: string | null
+      esta_atrasado: boolean
+      dias_atraso: number
+    }[]
+  }
+  return {
+    persona: {
+      id: fila.persona.id,
+      codigo: fila.persona.codigo,
+      nombres: fila.persona.nombres,
+      apellidoPaterno: fila.persona.apellido_paterno,
+      apellidoMaterno: fila.persona.apellido_materno,
+      dni: fila.persona.dni,
+      tipoPersona: fila.persona.tipo_persona,
+      activo: fila.persona.activo,
+    },
+    pendientes: fila.resumen.prestamos_pendientes,
+    atrasados: fila.resumen.prestamos_atrasados,
+    maxDiasAtraso: fila.resumen.max_dias_atraso,
+    prestamos: fila.prestamos_pendientes.map((prestamo) => ({
+      id: prestamo.prestamo_id,
+      codigo: prestamo.codigo_ejemplar,
+      titulo: prestamo.titulo,
+      fechaPrestamo: prestamo.fecha_prestamo,
+      fechaLimite: prestamo.fecha_limite,
+      estaAtrasado: prestamo.esta_atrasado,
+      diasAtraso: prestamo.dias_atraso,
+    })),
+  }
 }

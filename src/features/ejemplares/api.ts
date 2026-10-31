@@ -1,3 +1,4 @@
+import { fechaBiblioteca } from '@/lib/fechas'
 import { supabase } from '@/lib/supabase'
 import type {
   DatosActualizarEjemplar,
@@ -29,10 +30,7 @@ export async function obtenerEjemplaresDetallados(): Promise<EjemplarDetallado[]
       .from('ejemplares')
       .select('id, codigo, material_id, ubicacion_id, estado, observaciones')
       .order('codigo'),
-    supabase
-      .from('materiales')
-      .select('id, titulo, tipo_material_id')
-      .order('titulo'),
+    supabase.from('materiales').select('id, titulo, tipo_material_id').order('titulo'),
     supabase.from('ubicaciones').select('id, estante, nivel'),
     supabase.from('tipos_material').select('id, nombre'),
     supabase.from('material_autores').select('material_id, autor_id, orden'),
@@ -57,18 +55,14 @@ export async function obtenerEjemplaresDetallados(): Promise<EjemplarDetallado[]
   if (personasRes.error) throw personasRes.error
   if (tiposPersonaRes.error) throw tiposPersonaRes.error
 
-  const tiposPorId = new Map(
-    (tiposRes.data ?? []).map((t) => [t.id, t.nombre]),
-  )
+  const tiposPorId = new Map((tiposRes.data ?? []).map((t) => [t.id, t.nombre]))
   const ubicacionesPorId = new Map(
     (ubicacionesRes.data ?? []).map((u) => [
       u.id,
       `Estante ${u.estante}, Nivel ${u.nivel}`,
     ]),
   )
-  const autoresPorId = new Map(
-    (autoresRes.data ?? []).map((a) => [a.id, a.nombre]),
-  )
+  const autoresPorId = new Map((autoresRes.data ?? []).map((a) => [a.id, a.nombre]))
   const tiposPersonaPorId = new Map(
     (tiposPersonaRes.data ?? []).map((tp) => [tp.id, tp.nombre]),
   )
@@ -77,10 +71,11 @@ export async function obtenerEjemplaresDetallados(): Promise<EjemplarDetallado[]
     (personasRes.data ?? []).map((p) => [
       p.id,
       {
-        nombreCompleto: `${p.apellido_paterno} ${p.apellido_materno ?? ''}, ${p.nombres}`.replace(
-          /\s+,/,
-          ',',
-        ),
+        nombreCompleto:
+          `${p.apellido_paterno} ${p.apellido_materno ?? ''}, ${p.nombres}`.replace(
+            /\s+,/,
+            ',',
+          ),
         dni: p.dni,
         tipo: tiposPersonaPorId.get(p.tipo_persona_id) ?? 'Sin tipo',
       },
@@ -96,7 +91,7 @@ export async function obtenerEjemplaresDetallados(): Promise<EjemplarDetallado[]
         persona: persona.nombreCompleto,
         dni: persona.dni,
         tipoPersona: persona.tipo,
-        fechaPrestamo: pr.fecha_prestamo.slice(0, 10),
+        fechaPrestamo: fechaBiblioteca(pr.fecha_prestamo),
         fechaLimite: pr.fecha_limite,
       })
     }
@@ -158,7 +153,10 @@ export async function actualizarEstadoEjemplar(
     .single()
   if (errorActual) throw errorActual
 
-  if (actual.estado === 'prestado' && datos.estado === 'disponible') {
+  if (
+    (actual.estado === 'prestado' && datos.estado !== 'prestado') ||
+    (actual.estado !== 'prestado' && datos.estado === 'prestado')
+  ) {
     throw new ErrorEjemplarPrestadoNoDirecto()
   }
 

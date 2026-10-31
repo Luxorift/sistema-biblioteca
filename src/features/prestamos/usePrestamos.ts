@@ -27,9 +27,13 @@ export function useRegistrarPrestamo() {
       copias: CopiaDisponible[]
       persona: PersonaPrestataria
     }) => registrarPrestamo(datos, copias, persona),
-    onSuccess: () => {
-      cliente.invalidateQueries({ queryKey: ['ejemplares'] })
-      cliente.invalidateQueries({ queryKey: ['materiales'] })
-    },
+    onSuccess: () =>
+      Promise.all([
+        cliente.invalidateQueries({ queryKey: ['ejemplares'] }),
+        cliente.invalidateQueries({ queryKey: ['materiales'] }),
+        cliente.invalidateQueries({ queryKey: ['prestamos'] }),
+        cliente.invalidateQueries({ queryKey: ['credenciales'] }),
+        cliente.invalidateQueries({ queryKey: ['personas'] }),
+      ]),
   })
 }

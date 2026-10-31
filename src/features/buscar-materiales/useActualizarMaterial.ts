@@ -12,9 +12,13 @@ export function useActualizarMaterial() {
       materialId: number
       datos: DatosActualizarMaterial
     }) => actualizarMaterial(materialId, datos),
-    onSuccess: () => {
-      void cliente.invalidateQueries({ queryKey: ['materiales', 'lista'] })
-      void cliente.invalidateQueries({ queryKey: ['materiales'] })
-    },
+    onSuccess: () =>
+      Promise.all([
+        cliente.invalidateQueries({ queryKey: ['materiales'] }),
+        cliente.invalidateQueries({ queryKey: ['ejemplares'] }),
+        cliente.invalidateQueries({ queryKey: ['etiquetas'] }),
+        cliente.invalidateQueries({ queryKey: ['catalogos'] }),
+        cliente.invalidateQueries({ queryKey: ['prestamos'] }),
+      ]),
   })
 }

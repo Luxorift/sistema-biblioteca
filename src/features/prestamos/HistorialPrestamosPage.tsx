@@ -1,3 +1,4 @@
+import { fechaBiblioteca } from '@/lib/fechas'
 import { ArrowLeft } from 'lucide-react'
 import { useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
@@ -31,7 +32,8 @@ function filtrarPrestamos(
   const termino = buscar.trim().toLowerCase()
   return prestamos.filter((p) => {
     if (termino) {
-      const texto = `${p.codigo} ${p.titulo} ${p.persona} ${p.dni} ${p.tipoPersona}`.toLowerCase()
+      const texto =
+        `${p.codigo} ${p.titulo} ${p.persona} ${p.dni} ${p.tipoPersona}`.toLowerCase()
       if (!texto.includes(termino)) return false
     }
     if (desde && p.fechaPrestamo < desde) return false
@@ -47,14 +49,16 @@ interface HistorialPrestamosPageProps {
   ocultarEncabezado?: boolean
 }
 
-export function HistorialPrestamosPage({ ocultarEncabezado = false }: HistorialPrestamosPageProps) {
+export function HistorialPrestamosPage({
+  ocultarEncabezado = false,
+}: HistorialPrestamosPageProps) {
   const { data, isLoading, isError } = usePrestamosHistoricos()
   const [buscar, setBuscar] = useState('')
   const [desde, setDesde] = useState('')
   const [hasta, setHasta] = useState('')
   const [estado, setEstado] = useState<FiltroEstado>('todos')
 
-  const hoy = new Date().toISOString().slice(0, 10)
+  const hoy = fechaBiblioteca()
 
   const filtrados = useMemo(
     () => filtrarPrestamos(data ?? [], buscar, desde, hasta, estado),
@@ -108,7 +112,7 @@ export function HistorialPrestamosPage({ ocultarEncabezado = false }: HistorialP
           </div>
           <Link
             to="/"
-            className="border-borde inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border-2 bg-white px-5 text-lg font-bold transition-all hover:bg-papel active:scale-[0.98]"
+            className="border-borde hover:bg-papel inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border-2 bg-white px-5 text-lg font-bold transition-all active:scale-[0.98]"
           >
             <ArrowLeft aria-hidden size={20} />
             Volver al inicio
@@ -131,7 +135,9 @@ export function HistorialPrestamosPage({ ocultarEncabezado = false }: HistorialP
         <ResumenTarjeta
           titulo="Préstamos atrasados"
           valor={totalAtrasados}
-          clases={totalAtrasados > 0 ? 'bg-red-50 border-peligro' : 'bg-white border-borde'}
+          clases={
+            totalAtrasados > 0 ? 'bg-red-50 border-peligro' : 'bg-white border-borde'
+          }
         />
       </div>
 
@@ -145,18 +151,8 @@ export function HistorialPrestamosPage({ ocultarEncabezado = false }: HistorialP
             onChange={(e) => setBuscar(e.target.value)}
             placeholder="Código, título, persona o DNI…"
           />
-          <DatePicker
-            label="Desde"
-            value={desde}
-            onChange={setDesde}
-            max={hoy}
-          />
-          <DatePicker
-            label="Hasta"
-            value={hasta}
-            onChange={setHasta}
-            max={hoy}
-          />
+          <DatePicker label="Desde" value={desde} onChange={setDesde} max={hoy} />
+          <DatePicker label="Hasta" value={hasta} onChange={setHasta} max={hoy} />
           <Select
             label="Estado"
             value={estado}
@@ -183,7 +179,9 @@ export function HistorialPrestamosPage({ ocultarEncabezado = false }: HistorialP
       {filtrados.length === 0 ? (
         <section className="border-borde rounded-2xl border-2 bg-white p-8 text-center">
           <p className="text-xl font-bold">No hay préstamos</p>
-          <p className="text-tinta-suave mt-2">Prueba con otros filtros o términos de búsqueda.</p>
+          <p className="text-tinta-suave mt-2">
+            Prueba con otros filtros o términos de búsqueda.
+          </p>
         </section>
       ) : (
         <div className="border-borde overflow-x-auto rounded-2xl border-2 bg-white">
@@ -221,7 +219,9 @@ export function HistorialPrestamosPage({ ocultarEncabezado = false }: HistorialP
                   </td>
                   <td className="p-4 font-bold">
                     {p.diasAtraso > 0 ? (
-                      <span className="text-peligro">{p.diasAtraso} día{p.diasAtraso !== 1 ? 's' : ''}</span>
+                      <span className="text-peligro">
+                        {p.diasAtraso} día{p.diasAtraso !== 1 ? 's' : ''}
+                      </span>
                     ) : (
                       '—'
                     )}

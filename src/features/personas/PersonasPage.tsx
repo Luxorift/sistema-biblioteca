@@ -1,6 +1,6 @@
 import { ArrowLeft, RotateCcw } from 'lucide-react'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { Link } from 'react-router-dom'
 import { Alert } from '@/components/ui/Alert'
@@ -33,7 +33,6 @@ export function PersonasPage() {
       correo: '',
     },
   })
-  const personas = usePersonas()
   const tipos = useTiposPersona()
   const crearPersona = useCrearPersona()
   const crearTipo = useCrearTipoPersona()
@@ -47,28 +46,18 @@ export function PersonasPage() {
   const [error, setError] = useState<string | null>(null)
   const [personaEditar, setPersonaEditar] = useState<Persona | null>(null)
   const [exitoEdicion, setExitoEdicion] = useState(false)
-  const filtradas = useMemo(
-    () =>
-      (personas.data ?? []).filter((persona) => {
-        const termino = buscar.trim().toLowerCase()
-        const coincideBusqueda = `${persona.nombres} ${persona.apellidoPaterno} ${persona.apellidoMaterno ?? ''} ${persona.dni} ${persona.correo ?? ''}`
-          .toLowerCase()
-          .includes(termino)
-        const coincideTipo = !tipoFiltro || persona.tipoPersonaId === Number(tipoFiltro)
-        const coincideEstado =
-          !estadoFiltro ||
-          (estadoFiltro === 'activo' ? persona.activo : !persona.activo)
-        const coincideCorreo =
-          !correoFiltro ||
-          (correoFiltro === 'con-correo' ? Boolean(persona.correo) : !persona.correo)
-
-        return (
-          coincideBusqueda && coincideTipo && coincideEstado && coincideCorreo
-        )
-      }),
-    [personas.data, buscar, tipoFiltro, estadoFiltro, correoFiltro],
-  )
+  const [pagina, setPagina] = useState(0)
+  const personas = usePersonas({
+    buscar,
+    tipo: tipoFiltro,
+    estado: estadoFiltro,
+    correo: correoFiltro,
+    pagina,
+  })
+  const filtradas = personas.data?.personas ?? []
+  const total = personas.data?.total ?? 0
   const limpiarFiltros = () => {
+    setPagina(0)
     setBuscar('')
     setTipoFiltro('')
     setEstadoFiltro('')
@@ -78,6 +67,7 @@ export function PersonasPage() {
     setError(null)
     try {
       await crearPersona.mutateAsync(datos)
+      setPagina(0)
       formulario.reset()
       setConfirmar(null)
     } catch {
@@ -112,16 +102,23 @@ export function PersonasPage() {
         </div>
         <Link
           to="/"
-          className="border-borde inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border-2 bg-white px-5 text-lg font-bold transition-all hover:bg-papel active:scale-[0.98]"
+          className="border-borde hover:bg-papel inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border-2 bg-white px-5 text-lg font-bold transition-all active:scale-[0.98]"
         >
           <ArrowLeft aria-hidden size={20} />
           Volver al inicio
         </Link>
       </div>
+      <Link
+        to="/credenciales"
+        className="text-primario inline-flex min-h-12 items-center font-bold underline"
+      >
+        Imprimir credenciales de biblioteca
+      </Link>
       {error && <Alert>{error}</Alert>}
       {exitoEdicion && (
         <Alert>
-          Los datos de la persona se guardaron correctamente. Revisa la tabla si hace falta.
+          Los datos de la persona se guardaron correctamente. Revisa la tabla si hace
+          falta.
         </Alert>
       )}
       <section className="border-borde space-y-5 rounded-2xl border-2 bg-white p-5">
@@ -138,15 +135,21 @@ export function PersonasPage() {
         <h2 className="text-2xl font-bold">Buscar personas</h2>
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <TextField
-            label="Nombre, DNI o correo"
+            label="Nombre, DNI, correo o credencial"
             value={buscar}
-            onChange={(evento) => setBuscar(evento.target.value)}
+            onChange={(evento) => {
+              setPagina(0)
+              setBuscar(evento.target.value)
+            }}
             placeholder="Escribe un dato"
           />
           <Select
             label="Tipo de persona"
             value={tipoFiltro}
-            onChange={(evento) => setTipoFiltro(evento.target.value)}
+            onChange={(evento) => {
+              setPagina(0)
+              setTipoFiltro(evento.target.value)
+            }}
           >
             <option value="">Todos los tipos</option>
             {(tipos.data ?? []).map((tipo) => (
@@ -158,7 +161,10 @@ export function PersonasPage() {
           <Select
             label="Estado"
             value={estadoFiltro}
-            onChange={(evento) => setEstadoFiltro(evento.target.value)}
+            onChange={(evento) => {
+              setPagina(0)
+              setEstadoFiltro(evento.target.value)
+            }}
           >
             <option value="">Todos los estados</option>
             <option value="activo">Activas</option>
@@ -167,7 +173,10 @@ export function PersonasPage() {
           <Select
             label="Correo"
             value={correoFiltro}
-            onChange={(evento) => setCorreoFiltro(evento.target.value)}
+            onChange={(evento) => {
+              setPagina(0)
+              setCorreoFiltro(evento.target.value)
+            }}
           >
             <option value="">Con o sin correo</option>
             <option value="con-correo">Con correo</option>
@@ -205,6 +214,31 @@ export function PersonasPage() {
               No hay personas registradas con ese dato.
             </p>
           ))}
+        {personas.isSuccess && (
+          <div
+            className="flex flex-wrap items-center gap-4"
+            aria-label="Paginación de personas"
+          >
+            <Button
+              variante="secundario"
+              disabled={pagina === 0}
+              onClick={() => setPagina(pagina - 1)}
+            >
+              Anterior
+            </Button>
+            <p aria-live="polite">
+              Página {pagina + 1} de {Math.max(1, Math.ceil(total / 25))} · {total}{' '}
+              personas
+            </p>
+            <Button
+              variante="secundario"
+              disabled={(pagina + 1) * 25 >= total}
+              onClick={() => setPagina(pagina + 1)}
+            >
+              Siguiente
+            </Button>
+          </div>
+        )}
       </section>
       <Dialog
         abierto={Boolean(confirmar)}
@@ -252,7 +286,10 @@ export function PersonasPage() {
         abierto={Boolean(personaEditar)}
         tipos={tipos.data ?? []}
         onCerrar={() => setPersonaEditar(null)}
-        onGuardado={() => setExitoEdicion(true)}
+        onGuardado={() => {
+          setPagina(0)
+          setExitoEdicion(true)
+        }}
       />
     </div>
   )
