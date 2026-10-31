@@ -1,3 +1,5 @@
+import { useState } from 'react'
+import { ConsultarCredencial, type PersonaCredencial } from '@/features/personas'
 import { ArrowLeft, BookDown, BookUp, ClipboardList } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { DevolverPage } from '@/features/devoluciones'
@@ -12,13 +14,16 @@ interface Props {
 
 export function PrestamosPage({ tabInicial }: Props) {
   const [searchParams, setSearchParams] = useSearchParams()
+  const [personaCredencial, setPersonaCredencial] = useState<PersonaCredencial | null>(
+    null,
+  )
   const tabParam = searchParams.get('tab') as TabPrestamos | null
 
   // Determinar pestaña activa: URL param -> prop inicial -> 'devolver' (lo más frecuente)
   const tabActiva: TabPrestamos =
     tabParam === 'devolver' || tabParam === 'prestar' || tabParam === 'historial'
       ? tabParam
-      : tabInicial ?? 'devolver'
+      : (tabInicial ?? 'devolver')
 
   const cambiarTab = (nuevaTab: TabPrestamos) => {
     setSearchParams({ tab: nuevaTab }, { replace: true })
@@ -27,17 +32,18 @@ export function PrestamosPage({ tabInicial }: Props) {
   return (
     <div className="space-y-6">
       {/* Barra de pestañas unificada del mostrador con UN SOLO botón de volver al inicio */}
-      <div className="border-b-2 border-borde pb-4">
-        <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
+      <div className="border-borde border-b-2 pb-4">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold">Mostrador de préstamos y devoluciones</h1>
             <p className="text-tinta-suave text-xl">
-              Entrega libros a personas, registra devoluciones y consulta préstamos pendientes o morosos.
+              Entrega libros a personas, registra devoluciones y consulta préstamos
+              pendientes o morosos.
             </p>
           </div>
           <Link
             to="/"
-            className="border-borde inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border-2 bg-white px-5 text-lg font-bold transition-all hover:bg-papel active:scale-[0.98]"
+            className="border-borde hover:bg-papel inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border-2 bg-white px-5 text-lg font-bold transition-all active:scale-[0.98]"
           >
             <ArrowLeft aria-hidden size={20} />
             Volver al inicio
@@ -52,10 +58,10 @@ export function PrestamosPage({ tabInicial }: Props) {
             type="button"
             onClick={() => cambiarTab('devolver')}
             aria-current={tabActiva === 'devolver' ? 'page' : undefined}
-            className={`min-h-12 rounded-xl px-5 py-2.5 text-lg font-bold transition-colors inline-flex items-center gap-2 cursor-pointer ${
+            className={`inline-flex min-h-12 cursor-pointer items-center gap-2 rounded-xl px-5 py-2.5 text-lg font-bold transition-colors ${
               tabActiva === 'devolver'
                 ? 'bg-primario text-white shadow-xs'
-                : 'bg-white text-tinta border-2 border-borde hover:bg-papel'
+                : 'text-tinta border-borde hover:bg-papel border-2 bg-white'
             }`}
           >
             <BookDown aria-hidden size={22} />
@@ -65,10 +71,10 @@ export function PrestamosPage({ tabInicial }: Props) {
             type="button"
             onClick={() => cambiarTab('prestar')}
             aria-current={tabActiva === 'prestar' ? 'page' : undefined}
-            className={`min-h-12 rounded-xl px-5 py-2.5 text-lg font-bold transition-colors inline-flex items-center gap-2 cursor-pointer ${
+            className={`inline-flex min-h-12 cursor-pointer items-center gap-2 rounded-xl px-5 py-2.5 text-lg font-bold transition-colors ${
               tabActiva === 'prestar'
                 ? 'bg-primario text-white shadow-xs'
-                : 'bg-white text-tinta border-2 border-borde hover:bg-papel'
+                : 'text-tinta border-borde hover:bg-papel border-2 bg-white'
             }`}
           >
             <BookUp aria-hidden size={22} />
@@ -78,10 +84,10 @@ export function PrestamosPage({ tabInicial }: Props) {
             type="button"
             onClick={() => cambiarTab('historial')}
             aria-current={tabActiva === 'historial' ? 'page' : undefined}
-            className={`min-h-12 rounded-xl px-5 py-2.5 text-lg font-bold transition-colors inline-flex items-center gap-2 cursor-pointer ${
+            className={`inline-flex min-h-12 cursor-pointer items-center gap-2 rounded-xl px-5 py-2.5 text-lg font-bold transition-colors ${
               tabActiva === 'historial'
                 ? 'bg-primario text-white shadow-xs'
-                : 'bg-white text-tinta border-2 border-borde hover:bg-papel'
+                : 'text-tinta border-borde hover:bg-papel border-2 bg-white'
             }`}
           >
             <ClipboardList aria-hidden size={22} />
@@ -90,9 +96,30 @@ export function PrestamosPage({ tabInicial }: Props) {
         </nav>
       </div>
 
+      <ConsultarCredencial
+        onPrestar={(persona) => {
+          setPersonaCredencial(persona)
+          setSearchParams({ tab: 'prestar' }, { replace: true })
+        }}
+      />
       {/* Contenido sin encabezado duplicado */}
       {tabActiva === 'devolver' && <DevolverPage ocultarEncabezado />}
-      {tabActiva === 'prestar' && <PrestarPage ocultarEncabezado />}
+      {tabActiva === 'prestar' && (
+        <PrestarPage
+          key={personaCredencial?.id ?? 'sin-credencial'}
+          ocultarEncabezado
+          personaInicial={
+            personaCredencial
+              ? {
+                  id: personaCredencial.id,
+                  nombreCompleto: `${personaCredencial.apellidoPaterno} ${personaCredencial.apellidoMaterno ?? ''}, ${personaCredencial.nombres}`,
+                  dni: personaCredencial.dni,
+                  tipo: personaCredencial.tipoPersona,
+                }
+              : undefined
+          }
+        />
+      )}
       {tabActiva === 'historial' && <HistorialPrestamosPage ocultarEncabezado />}
     </div>
   )

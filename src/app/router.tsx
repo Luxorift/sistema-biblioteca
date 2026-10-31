@@ -74,6 +74,14 @@ export const router = createBrowserRouter([
 
           // Otros módulos del sistema
           {
+            path: 'credenciales',
+            lazy: async () => {
+              const { CredencialesPage } =
+                await import('@/features/personas/CredencialesPage')
+              return { Component: CredencialesPage }
+            },
+          },
+          {
             path: 'personas',
             lazy: async () => {
               const { PersonasPage } = await import('@/features/personas/PersonasPage')

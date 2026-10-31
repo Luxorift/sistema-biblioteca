@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   actualizarPersona,
+  consultarCredencial,
   crearPersona,
   crearTipoPersona,
   obtenerPersonas,
@@ -27,6 +28,7 @@ export function useCrearPersona() {
     mutationFn: crearPersona,
     onSuccess: () => {
       void cliente.invalidateQueries({ queryKey: ['personas'] })
+      void cliente.invalidateQueries({ queryKey: ['credenciales'] })
       void cliente.invalidateQueries({ queryKey: ['prestamos'] })
       void cliente.invalidateQueries({ queryKey: ['ejemplares'] })
     },
@@ -44,6 +46,7 @@ export function useActualizarPersona() {
     }) => actualizarPersona(personaId, datos),
     onSuccess: () => {
       void cliente.invalidateQueries({ queryKey: ['personas'] })
+      void cliente.invalidateQueries({ queryKey: ['credenciales'] })
       void cliente.invalidateQueries({ queryKey: ['prestamos'] })
       void cliente.invalidateQueries({ queryKey: ['ejemplares'] })
     },
@@ -55,5 +58,16 @@ export function useCrearTipoPersona() {
     mutationFn: crearTipoPersona,
     onSuccess: () =>
       cliente.invalidateQueries({ queryKey: ['catalogos', 'tipos-persona'] }),
+  })
+}
+
+export function useConsultarCredencial(codigo: string) {
+  return useQuery({
+    queryKey: ['credenciales', codigo],
+    queryFn: () => consultarCredencial(codigo),
+    enabled: Boolean(codigo),
+    staleTime: 0,
+    refetchOnWindowFocus: true,
+    refetchInterval: 60_000,
   })
 }

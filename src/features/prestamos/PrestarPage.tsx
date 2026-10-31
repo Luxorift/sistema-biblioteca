@@ -26,16 +26,20 @@ import type {
 
 interface PrestarPageProps {
   ocultarEncabezado?: boolean
+  personaInicial?: PersonaPrestataria
 }
 
-export function PrestarPage({ ocultarEncabezado = false }: PrestarPageProps) {
+export function PrestarPage({
+  ocultarEncabezado = false,
+  personaInicial,
+}: PrestarPageProps) {
   const hoy = fechaBiblioteca()
   const formulario = useForm<DatosFormulario>({
     resolver: zodResolver(esquemaPrestamo),
     defaultValues: {
       ejemplarIds: [],
       cantidad: 1,
-      personaId: 0,
+      personaId: personaInicial?.id ?? 0,
       fechaPrestamo: hoy,
       tieneFechaLimite: false,
       fechaLimite: '',
@@ -50,7 +54,7 @@ export function PrestarPage({ ocultarEncabezado = false }: PrestarPageProps) {
     useState<MaterialPrestable | null>(null)
   const [copiasSeleccionadas, setCopiasSeleccionadas] = useState<CopiaDisponible[]>([])
   const [personaSeleccionada, setPersonaSeleccionada] =
-    useState<PersonaPrestataria | null>(null)
+    useState<PersonaPrestataria | null>(personaInicial ?? null)
   const [confirmar, setConfirmar] = useState<DatosFormulario | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [resumen, setResumen] = useState<PrestamoConfirmado | null>(null)

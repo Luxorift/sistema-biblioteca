@@ -108,8 +108,12 @@ y luego pasar `Database` a `createClient<Database>(…)` en `src/lib/supabase.ts
 3. En **Environment Variables** agregar `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY`.
 4. `vercel.json` ya incluye la regla que evita el error 404 al recargar rutas como `/prestar`.
 
-Flujo de ramas: `main` es lo que usa el bibliotecario. Cada cambio nuevo va en su rama
-(`feature/buscar-material`) y entra a `main` por pull request. Vercel genera un enlace de prueba por rama.
+Flujo de ramas: `main` es producción; `dev` integra los cambios. Antes de empezar,
+actualiza las referencias remotas y comprueba que `dev` incluye `main`. Crea cada
+rama desde `dev`: `feature/nombre-en-espanol` para funcionalidades y
+`fix/nombre-en-espanol` para correcciones. Los commits usan `feat:` o `fix:` con
+mensajes en español. Sube la rama y solicita revisión hacia `dev`; el responsable
+del repositorio aprueba los merges. Vercel genera un enlace de prueba por rama.
 
 **Nunca** subas `.env.local` ni la clave `service_role` / secret de Supabase.
 
@@ -200,6 +204,23 @@ sigue impidiendo registrarles nuevos préstamos. La consulta no modifica datos:
 para devolver un libro, se confirma el préstamo elegido y se usa la RPC existente
 `devolver_prestamo(p_prestamo_id, p_fecha)`.
 
-`buscar_personas` también devuelve el código y permite buscarlo. Este cambio deja
-lista la base de datos; la pantalla de escaneo y la impresión de credenciales de
-personas todavía deben conectarse a estas consultas en el frontend.
+`buscar_personas` también devuelve el código y permite buscarlo.
+
+### Usar las credenciales
+
+- En **Personas**, usa **Ver credencial** para una persona o **Imprimir credenciales
+  de biblioteca** para seleccionar varias. La selección se conserva entre páginas.
+- En `/credenciales`, revisa la vista previa e imprime al 100 % de escala. El código
+  CODE128 tiene fondo blanco y el mismo texto debajo, también en modo oscuro.
+- En **Préstamos y devoluciones**, coloca el cursor en **Código de credencial**.
+  Los lectores que funcionan como teclado pueden enviar el código y Enter; también
+  se puede digitar y pulsar **Consultar credencial**.
+- La consulta muestra pendientes y atrasos. **Prestar a esta persona** selecciona
+  al titular en el formulario; los libros y la confirmación se eligen después.
+- **Devolver BIB-…** filtra el préstamo elegido en la pantalla existente de
+  devolución. El bibliotecario debe confirmar antes de registrar la devolución.
+
+Las pruebas de interfaz (`npm run test:ui`) cubren estos recorridos con respuestas
+controladas, incluido el SVG del código de barras, la selección entre páginas y
+las confirmaciones. `npm run test:datos` ejecuta las pruebas SQL y de Edge Function.
+`npm test` ejecuta ambas suites.

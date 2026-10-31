@@ -1,7 +1,7 @@
 import { fechaBiblioteca } from '@/lib/fechas'
 import { ArrowLeft } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { Alert } from '@/components/ui/Alert'
 import { Button } from '@/components/ui/Button'
 import { IndicadorCarga } from '@/components/feedback'
@@ -17,6 +17,8 @@ interface DevolverPageProps {
 }
 
 export function DevolverPage({ ocultarEncabezado = false }: DevolverPageProps) {
+  const [parametros, setParametros] = useSearchParams()
+  const prestamoId = parametros.get('prestamoId')
   const hoy = fechaBiblioteca()
   const prestamos = usePrestamosPendientes()
   const registrar = useRegistrarDevolucion()
@@ -31,13 +33,14 @@ export function DevolverPage({ ocultarEncabezado = false }: DevolverPageProps) {
     () =>
       (prestamos.data ?? []).filter(
         (prestamo) =>
+          (!prestamoId || String(prestamo.id) === prestamoId) &&
           `${prestamo.codigo} ${prestamo.titulo} ${prestamo.persona} ${prestamo.dni} ${prestamo.tipoPersona}`
             .toLowerCase()
             .includes(buscar.trim().toLowerCase()) &&
           (!desde || prestamo.fechaPrestamo >= desde) &&
           (!hasta || prestamo.fechaPrestamo <= hasta),
       ),
-    [prestamos.data, buscar, desde, hasta],
+    [prestamos.data, buscar, desde, hasta, prestamoId],
   )
   const confirmar = (prestamo: PrestamoPendiente) => {
     setSeleccionado(prestamo)
@@ -80,6 +83,21 @@ export function DevolverPage({ ocultarEncabezado = false }: DevolverPageProps) {
             <ArrowLeft aria-hidden size={20} />
             Volver al inicio
           </Link>
+        </div>
+      )}
+      {prestamoId && (
+        <div className="border-borde rounded-xl border-2 p-4">
+          <p>Mostrando el préstamo elegido desde la credencial.</p>
+          <Button
+            variante="secundario"
+            onClick={() => {
+              const nuevos = new URLSearchParams(parametros)
+              nuevos.delete('prestamoId')
+              setParametros(nuevos, { replace: true })
+            }}
+          >
+            Ver todos los préstamos pendientes
+          </Button>
         </div>
       )}
       {error && <Alert>{error}</Alert>}

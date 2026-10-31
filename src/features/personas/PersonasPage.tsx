@@ -108,6 +108,12 @@ export function PersonasPage() {
           Volver al inicio
         </Link>
       </div>
+      <Link
+        to="/credenciales"
+        className="text-primario inline-flex min-h-12 items-center font-bold underline"
+      >
+        Imprimir credenciales de biblioteca
+      </Link>
       {error && <Alert>{error}</Alert>}
       {exitoEdicion && (
         <Alert>
@@ -129,7 +135,7 @@ export function PersonasPage() {
         <h2 className="text-2xl font-bold">Buscar personas</h2>
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <TextField
-            label="Nombre, DNI o correo"
+            label="Nombre, DNI, correo o credencial"
             value={buscar}
             onChange={(evento) => {
               setPagina(0)

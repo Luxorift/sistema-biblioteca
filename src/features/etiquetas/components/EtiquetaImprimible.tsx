@@ -1,5 +1,5 @@
 import type { CopiaParaEtiqueta, FormatoEtiqueta } from '../types'
-import { CodigoBarras } from './CodigoBarras'
+import { CodigoBarras } from '@/components/ui/CodigoBarras'
 import { CodigoQR } from './CodigoQR'
 
 interface EtiquetaImprimibleProps {
@@ -12,13 +12,13 @@ export function EtiquetaImprimible({ copia, formato }: EtiquetaImprimibleProps) 
 
   return (
     <article
-      className="border-tinta flex h-full flex-col justify-between rounded-lg border-2 bg-white p-3 text-black break-inside-avoid print:border-black print:p-2.5"
+      className="border-tinta flex h-full break-inside-avoid flex-col justify-between rounded-lg border-2 bg-white p-3 text-black print:border-black print:p-2.5"
       style={{ minHeight: '160px' }}
     >
       {/* Encabezado */}
       <div>
         <header className="mb-1 border-b border-gray-300 pb-1 text-center">
-          <p className="text-[11px] font-bold tracking-wider uppercase text-gray-700">
+          <p className="text-[11px] font-bold tracking-wider text-gray-700 uppercase">
             Biblioteca Escolar
           </p>
         </header>
@@ -32,9 +32,7 @@ export function EtiquetaImprimible({ copia, formato }: EtiquetaImprimibleProps) 
             {copia.titulo}
           </h3>
           {autoresTexto && (
-            <p className="truncate text-[11px] text-gray-600">
-              {autoresTexto}
-            </p>
+            <p className="truncate text-[11px] text-gray-600">{autoresTexto}</p>
           )}
         </div>
       </div>

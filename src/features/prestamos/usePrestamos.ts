@@ -32,6 +32,7 @@ export function useRegistrarPrestamo() {
         cliente.invalidateQueries({ queryKey: ['ejemplares'] }),
         cliente.invalidateQueries({ queryKey: ['materiales'] }),
         cliente.invalidateQueries({ queryKey: ['prestamos'] }),
+        cliente.invalidateQueries({ queryKey: ['credenciales'] }),
         cliente.invalidateQueries({ queryKey: ['personas'] }),
       ]),
   })

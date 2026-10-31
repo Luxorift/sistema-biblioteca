@@ -16,6 +16,7 @@ export function useRegistrarDevolucion() {
     onSuccess: () =>
       Promise.all([
         cliente.invalidateQueries({ queryKey: ['prestamos'] }),
+        cliente.invalidateQueries({ queryKey: ['credenciales'] }),
         cliente.invalidateQueries({ queryKey: ['ejemplares'] }),
         cliente.invalidateQueries({ queryKey: ['materiales'] }),
         cliente.invalidateQueries({ queryKey: ['personas'] }),
