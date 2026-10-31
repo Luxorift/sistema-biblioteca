@@ -94,7 +94,7 @@ it('exige ubicaciones al registrar y permite combinar ubicaciones en un mismo lo
   const enviar = vi.fn()
   render(<Registro onEnviar={enviar} />)
   const usuario = userEvent.setup()
-  await usuario.click(screen.getByRole('button', { name: 'Guardar material y copias' }))
+  await usuario.click(screen.getByRole('button', { name: 'Revisar material y copias' }))
   await screen.findByText('Indica la ubicación de cada copia nueva.')
   expect(enviar).not.toHaveBeenCalled()
   await usuario.selectOptions(
@@ -103,7 +103,7 @@ it('exige ubicaciones al registrar y permite combinar ubicaciones en un mismo lo
   )
   await usuario.click(screen.getByText(/Asignar una ubicación distinta por copia/))
   await usuario.selectOptions(screen.getByLabelText('Ubicación de copia nueva 2'), '2')
-  await usuario.click(screen.getByRole('button', { name: 'Guardar material y copias' }))
+  await usuario.click(screen.getByRole('button', { name: 'Revisar material y copias' }))
   await waitFor(() => expect(enviar).toHaveBeenCalledTimes(1))
   expect(enviar.mock.calls[0][0].ubicacionesIds).toEqual([1, 2])
 })

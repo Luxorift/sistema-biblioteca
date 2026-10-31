@@ -1,12 +1,14 @@
 import { ArrowLeft } from 'lucide-react'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { Alert } from '@/components/ui/Alert'
 import { Button } from '@/components/ui/Button'
 import { Dialog } from '@/components/ui/Dialog'
 import { IndicadorCarga } from '@/components/feedback'
 import { useCatalogo, useEditoriales, useUbicaciones } from '@/features/catalogos'
+import { irAlPaso } from '@/lib/guiarNavegacion'
+import { CamposCopiasMaterial } from './components/CamposCopiasMaterial'
 import { FormularioMaterial } from './components/FormularioMaterial'
 import { NuevoCatalogoDialog } from './components/NuevoCatalogoDialog'
 import { ResumenExito } from './components/ResumenExito'
@@ -26,6 +28,10 @@ interface AgregarMaterialPageProps {
 export function AgregarMaterialPage({
   ocultarEncabezado = false,
 }: AgregarMaterialPageProps) {
+  const copiasRef = useRef<HTMLElement>(null)
+  const registroRef = useRef<HTMLElement>(null)
+  const resultadoRef = useRef<HTMLElement>(null)
+  const mensajesRef = useRef<HTMLElement>(null)
   const formulario = useForm<DatosFormulario>({
     resolver: zodResolver(esquemaMaterial),
     defaultValues: {
@@ -39,7 +45,6 @@ export function AgregarMaterialPage({
       ubicacionesIds: [null],
     },
   })
-  const cantidad = useWatch({ control: formulario.control, name: 'cantidad' })
   const titulo = useWatch({ control: formulario.control, name: 'titulo' })
   const tituloConDemora = useDebouncedValue(titulo)
   const tipos = useCatalogo('tipos_material')
@@ -82,10 +87,12 @@ export function AgregarMaterialPage({
         codigos: ejemplares.map(({ codigo }) => codigo),
       })
       setPendiente(null)
+      irAlPaso(resultadoRef)
     } catch {
       setError(
         'No se pudieron agregar las copias. Revisa las ubicaciones y vuelve a intentarlo.',
       )
+      irAlPaso(mensajesRef)
     }
   }
   const guardar = async (datos: DatosFormulario) => {
@@ -101,6 +108,7 @@ export function AgregarMaterialPage({
           materialId: resultado.materialId,
           titulo: datos.titulo,
         })
+        irAlPaso(copiasRef)
         return
       }
       await crearCopias(
@@ -112,11 +120,13 @@ export function AgregarMaterialPage({
       setError(
         'No se pudo guardar el material. Revisa los datos y tu conexión, luego intenta de nuevo.',
       )
+      irAlPaso(mensajesRef)
     }
   }
   const enviar = (datos: DatosFormulario) => setDatosPorConfirmar(datos)
   const seleccionarSimilar = (material: MaterialSimilar) => {
     setPendiente({ materialId: material.id, titulo: material.titulo })
+    irAlPaso(copiasRef)
   }
   const agregarAlExistente = async () => {
     if (!pendiente || !(await formulario.trigger(['cantidad', 'ubicacionesIds']))) return
@@ -136,6 +146,7 @@ export function AgregarMaterialPage({
     setResumen(null)
     setPendiente(null)
     setError(null)
+    irAlPaso(registroRef)
   }
   const volverAlInicio = () => {
     if (formulario.formState.isDirty) {
@@ -144,7 +155,12 @@ export function AgregarMaterialPage({
     }
     window.location.assign('/')
   }
-  if (resumen) return <ResumenExito resumen={resumen} onOtro={reiniciar} />
+  if (resumen)
+    return (
+      <section ref={resultadoRef} tabIndex={-1} className="destino-flujo">
+        <ResumenExito resumen={resumen} onOtro={reiniciar} />
+      </section>
+    )
   return (
     <div className="space-y-7">
       {!ocultarEncabezado && (
@@ -172,7 +188,11 @@ export function AgregarMaterialPage({
           No se pudieron cargar las opciones. Recarga la página e intenta de nuevo.
         </Alert>
       )}
-      {error && <Alert>{error}</Alert>}
+      {error && (
+        <section ref={mensajesRef} tabIndex={-1} className="destino-flujo">
+          <Alert>{error}</Alert>
+        </section>
+      )}
       {tituloConDemora.trim().length >= 3 && (
         <Similares
           materiales={similares.data ?? []}
@@ -183,14 +203,22 @@ export function AgregarMaterialPage({
       )}
       {pendiente && (
         <section
-          className="border-primario space-y-4 rounded-2xl border-2 bg-white p-5"
+          ref={copiasRef}
+          tabIndex={-1}
+          className="destino-flujo border-primario space-y-4 rounded-2xl border-2 bg-white p-5"
           aria-live="polite"
         >
-          <h2 className="text-2xl font-bold">Este material ya existe</h2>
+          <h2 className="text-2xl font-bold">Agregar copias a {pendiente.titulo}</h2>
           <p>
-            La ficha no se duplicó. ¿Quieres agregar {cantidad}{' '}
-            {cantidad === 1 ? 'copia' : 'copias'} a ese material?
+            La ficha ya existe. Indica cuántas copias llegaron y dónde guardarás cada una;
+            después confirma.
           </p>
+          <CamposCopiasMaterial
+            formulario={formulario}
+            ubicaciones={ubicaciones.data ?? []}
+            cargando={cargandoCatalogos}
+            onNuevaUbicacion={() => setDialogo('ubicacion')}
+          />
           <div className="flex flex-wrap gap-3">
             <Button
               onClick={() => void agregarAlExistente()}
@@ -198,23 +226,33 @@ export function AgregarMaterialPage({
             >
               {agregarCopias.isPending ? 'Guardando…' : 'Sí, agregar copias'}
             </Button>
-            <Button variante="secundario" onClick={() => setPendiente(null)}>
-              Corregir datos
+            <Button
+              variante="secundario"
+              onClick={() => {
+                setPendiente(null)
+                irAlPaso(registroRef)
+              }}
+            >
+              Volver al registro
             </Button>
           </div>
         </section>
       )}
-      <FormularioMaterial
-        formulario={formulario}
-        tipos={tipos.data ?? []}
-        categorias={categorias.data ?? []}
-        ubicaciones={ubicaciones.data ?? []}
-        editoriales={editoriales.data ?? []}
-        cargandoCatalogos={cargandoCatalogos}
-        onNuevo={setDialogo}
-        onEnviar={enviar}
-        guardando={registrar.isPending || agregarCopias.isPending}
-      />
+      {!pendiente && (
+        <section ref={registroRef} tabIndex={-1} className="destino-flujo">
+          <FormularioMaterial
+            formulario={formulario}
+            tipos={tipos.data ?? []}
+            categorias={categorias.data ?? []}
+            ubicaciones={ubicaciones.data ?? []}
+            editoriales={editoriales.data ?? []}
+            cargandoCatalogos={cargandoCatalogos}
+            onNuevo={setDialogo}
+            onEnviar={enviar}
+            guardando={registrar.isPending || agregarCopias.isPending}
+          />
+        </section>
+      )}
       {dialogo && (
         <NuevoCatalogoDialog
           abierto

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter } from 'react-router-dom'
@@ -62,6 +62,23 @@ beforeEach(() => {
 })
 
 describe('atención por credencial', () => {
+  it('enfoca el resultado del escaneo, pero no roba el foco al actualizar datos en segundo plano', async () => {
+    vi.mocked(consultarCredencial).mockResolvedValue(credencial)
+    const { cliente } = montar(<ConsultarCredencial onPrestar={vi.fn()} />)
+    const usuario = userEvent.setup()
+    const campo = screen.getByLabelText('Código de credencial')
+    await usuario.type(campo, 'PER-000001{Enter}')
+    await waitFor(() =>
+      expect(document.activeElement).toBe(
+        screen.getByRole('region', { name: 'Resultado de la credencial' }),
+      ),
+    )
+    await usuario.click(campo)
+    await act(async () => {
+      await cliente.invalidateQueries({ queryKey: ['credenciales'] })
+    })
+    expect(document.activeElement).toBe(campo)
+  })
   it('acepta un escáner con Enter, muestra atrasos y permite elegir a la persona', async () => {
     vi.mocked(consultarCredencial).mockResolvedValue(credencial)
     const elegir = vi.fn()

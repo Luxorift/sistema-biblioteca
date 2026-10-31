@@ -1,3 +1,4 @@
+import type { RefObject } from 'react'
 import { fechaBiblioteca } from '@/lib/fechas'
 import type { UseFormReturn } from 'react-hook-form'
 import { Button } from '@/components/ui/Button'
@@ -7,6 +8,9 @@ import type { FormularioPrestamo } from '../schemas'
 import type { CopiaDisponible, PersonaPrestataria } from '../types'
 
 interface FormularioPrestamoProps {
+  referenciaCopias?: RefObject<HTMLElement | null>
+  referenciaFechas?: RefObject<HTMLElement | null>
+  onInvalido?: () => void
   formulario: UseFormReturn<FormularioPrestamo>
   copias: CopiaDisponible[]
   copiasSeleccionadas: CopiaDisponible[]
@@ -18,6 +22,9 @@ interface FormularioPrestamoProps {
   guardando: boolean
 }
 export function FormularioPrestamo({
+  referenciaCopias,
+  referenciaFechas,
+  onInvalido,
   formulario,
   copias,
   copiasSeleccionadas,
@@ -38,9 +45,18 @@ export function FormularioPrestamo({
   const cantidad = watch('cantidad')
   const seleccionados = new Set(copiasSeleccionadas.map((copia) => copia.id))
   return (
-    <form noValidate onSubmit={handleSubmit(onEnviar)} className="space-y-6">
-      <section className="space-y-3">
+    <form noValidate onSubmit={handleSubmit(onEnviar, onInvalido)} className="space-y-6">
+      <section
+        ref={referenciaCopias}
+        tabIndex={-1}
+        className="destino-flujo space-y-3"
+        aria-label="Elegir copias"
+      >
         <h2 className="text-xl font-bold">3. Elige las copias</h2>
+        <p className="text-tinta-suave">
+          Primero indica cuántas copias entregarás y después marca sus códigos. Al
+          completar la cantidad pasarás a las fechas.
+        </p>
         <div className="flex flex-wrap items-end gap-4">
           <div className="w-full max-w-xs">
             <TextField
@@ -79,7 +95,7 @@ export function FormularioPrestamo({
         )}
       </section>
       <section className="border-borde space-y-3 border-t-2 pt-5">
-        <h2 className="text-xl font-bold">4. Persona elegida</h2>
+        <h2 className="text-xl font-bold">Persona del préstamo</h2>
         {personaSeleccionada ? (
           <div className="bg-papel flex flex-wrap items-center justify-between gap-3 rounded-xl p-4">
             <p>
@@ -97,8 +113,13 @@ export function FormularioPrestamo({
           <p className="text-peligro font-bold">{errors.personaId.message}</p>
         )}
       </section>
-      <section className="border-borde space-y-4 border-t-2 pt-5">
-        <h2 className="text-xl font-bold">5. Fechas</h2>
+      <section
+        ref={referenciaFechas}
+        tabIndex={-1}
+        className="destino-flujo border-borde space-y-4 border-t-2 pt-5"
+        aria-label="Fechas y revisión"
+      >
+        <h2 className="text-xl font-bold">4. Fechas y revisión</h2>
         <DatePicker
           label="Fecha de préstamo"
           max={fechaBiblioteca()}
@@ -129,7 +150,7 @@ export function FormularioPrestamo({
         )}
       </section>
       <Button type="submit" disabled={guardando}>
-        {guardando ? 'Registrando…' : 'Continuar'}
+        {guardando ? 'Registrando…' : 'Revisar préstamo'}
       </Button>
     </form>
   )

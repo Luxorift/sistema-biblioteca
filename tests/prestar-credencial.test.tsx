@@ -72,9 +72,11 @@ it('registra el préstamo con el ID de la persona seleccionada por credencial', 
   )
   expect(await screen.findByText('Pérez, Ana')).toBeTruthy()
   const usuario = userEvent.setup()
-  await usuario.click(screen.getByRole('button', { name: 'Elegir', exact: true }))
+  await usuario.click(
+    screen.getByRole('button', { name: 'Elegir este material', exact: true }),
+  )
   await usuario.click(screen.getByRole('button', { name: /Elegir: BIB-000005/ }))
-  await usuario.click(screen.getByRole('button', { name: 'Continuar' }))
+  await usuario.click(screen.getByRole('button', { name: 'Revisar préstamo' }))
   expect(registrarPrestamo).not.toHaveBeenCalled()
   await usuario.click(
     await screen.findByRole('button', { name: 'Sí, registrar préstamo' }),

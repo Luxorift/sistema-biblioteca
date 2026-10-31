@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
+import { irAlPaso } from '@/lib/guiarNavegacion'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Alert } from '@/components/ui/Alert'
 import { Button } from '@/components/ui/Button'
@@ -8,6 +9,8 @@ import type { Persona } from './types'
 import { usePersonas } from './usePersonas'
 
 export function CredencialesPage() {
+  const vistaPreviaRef = useRef<HTMLElement>(null)
+  const listaRef = useRef<HTMLElement>(null)
   const [parametros] = useSearchParams()
   const codigoInicial = parametros.get('codigo') ?? ''
   const [buscar, setBuscar] = useState(codigoInicial)
@@ -44,9 +47,16 @@ export function CredencialesPage() {
         </Link>
       </header>
       <section
-        className="space-y-4 print:hidden"
+        ref={listaRef}
+        tabIndex={-1}
+        className="destino-flujo space-y-4 print:hidden"
         aria-label="Selección de personas para credenciales"
       >
+        <h2 className="text-2xl font-bold">1. Selecciona las personas</h2>
+        <p role="status">
+          {seleccionadas.size} credenciales seleccionadas. Puedes seguir eligiendo en
+          otras páginas y después revisar la vista previa.
+        </p>
         <TextField
           label="Buscar por nombre, DNI o código"
           value={buscar}
@@ -100,7 +110,10 @@ export function CredencialesPage() {
               <Button
                 variante="secundario"
                 disabled={pagina === 0}
-                onClick={() => setPagina(pagina - 1)}
+                onClick={() => {
+                  setPagina(pagina - 1)
+                  irAlPaso(listaRef)
+                }}
               >
                 Anterior
               </Button>
@@ -110,7 +123,10 @@ export function CredencialesPage() {
               <Button
                 variante="secundario"
                 disabled={(pagina + 1) * 25 >= total}
-                onClick={() => setPagina(pagina + 1)}
+                onClick={() => {
+                  setPagina(pagina + 1)
+                  irAlPaso(listaRef)
+                }}
               >
                 Siguiente
               </Button>
@@ -119,6 +135,13 @@ export function CredencialesPage() {
         )}
       </section>
       <div className="flex flex-wrap items-center gap-4 print:hidden">
+        <Button
+          variante="secundario"
+          disabled={seleccionadas.size === 0}
+          onClick={() => irAlPaso(vistaPreviaRef)}
+        >
+          Ver vista previa
+        </Button>
         <Button disabled={seleccionadas.size === 0} onClick={() => window.print()}>
           Imprimir credenciales ({seleccionadas.size})
         </Button>
@@ -131,7 +154,15 @@ export function CredencialesPage() {
         </Button>
         <p>Imprime al 100 % de escala. Cada credencial mide 85,6 mm de ancho.</p>
       </div>
-      <section className="credenciales-hoja" aria-label="Vista previa de credenciales">
+      <section
+        ref={vistaPreviaRef}
+        tabIndex={-1}
+        className="destino-flujo credenciales-hoja"
+        aria-label="Vista previa de credenciales"
+      >
+        <h2 className="col-span-full text-2xl font-bold print:hidden">
+          2. Revisa e imprime las credenciales
+        </h2>
         {[...seleccionadas.values()].map((persona) => (
           <CredencialImprimible key={persona.id} persona={persona} />
         ))}
