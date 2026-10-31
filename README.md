@@ -113,8 +113,7 @@ Flujo de ramas: `main` es producción; `dev` integra los cambios. Antes de empez
 actualiza las referencias remotas y comprueba que `dev` incluye `main`. Crea cada
 rama desde `dev`: `feature/nombre-en-espanol` para funcionalidades y
 `fix/nombre-en-espanol` para correcciones. Los commits usan `feat:` o `fix:` con
-mensajes en español. Sube la rama y solicita revisión hacia `dev`; el responsable
-del repositorio aprueba los merges. Vercel genera un enlace de prueba por rama.
+mensajes en español. Sube la rama y solicita revisión hacia `dev`; los merges siguen la autorización del responsable del repositorio. Vercel genera un enlace de prueba por rama.
 
 **Nunca** subas `.env.local` ni la clave `service_role` / secret de Supabase.
 
@@ -246,3 +245,23 @@ copias ya ubicadas pueden cambiar de estante o nivel; su ubicación no puede bor
 En el mostrador, una copia antigua sin ubicación aparece como **Ubicación pendiente
 de asignar**. Sigue siendo posible registrar sus préstamos y devoluciones mientras
 se completa el inventario.
+
+## 14. Navegación guiada para el bibliotecario
+
+El mostrador muestra cuatro pasos: **Material**, **Persona**, **Copias** y
+**Fechas y revisión**. Al elegir un material, una persona o completar la cantidad
+de copias, el foco y la pantalla avanzan al siguiente paso pendiente. Una persona
+elegida desde su credencial permite omitir su búsqueda. Se puede volver a un paso
+desde la guía sin perder las selecciones.
+
+El desplazamiento ocurre tras acciones explícitas, no al escribir filtros ni al
+refrescar datos en segundo plano. Respeta `prefers-reduced-motion` y deja un foco
+visible para quienes navegan con teclado o lector de pantalla.
+
+Al agregar copias a un material existente se muestran solo la cantidad, sus
+ubicaciones y la confirmación, separados del registro de una ficha nueva. Después
+de registrar una persona se ofrece imprimir su credencial. La impresión incluye
+un botón **Ver vista previa** para revisar las tarjetas antes de imprimirlas.
+
+Las confirmaciones de préstamos y devoluciones se mantienen. Al terminar, se
+muestra el resultado y se puede iniciar otra operación desde el paso apropiado.

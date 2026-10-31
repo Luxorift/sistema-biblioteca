@@ -1,3 +1,5 @@
+import { irAlPaso } from '@/lib/guiarNavegacion'
+import { useEnfocarAlCambiar } from '@/lib/useEnfocarAlCambiar'
 import { useState } from 'react'
 import { ConsultarCredencial, type PersonaCredencial } from '@/features/personas'
 import { ArrowLeft, BookDown, BookUp, ClipboardList } from 'lucide-react'
@@ -25,8 +27,13 @@ export function PrestamosPage({ tabInicial }: Props) {
       ? tabParam
       : (tabInicial ?? 'devolver')
 
+  const contenidoRef = useEnfocarAlCambiar(
+    `${tabActiva}-${searchParams.get('prestamoId') ?? ''}-${personaCredencial?.id ?? ''}`,
+  )
+
   const cambiarTab = (nuevaTab: TabPrestamos) => {
     setSearchParams({ tab: nuevaTab }, { replace: true })
+    if (nuevaTab === tabActiva) irAlPaso(contenidoRef)
   }
 
   return (
@@ -103,24 +110,31 @@ export function PrestamosPage({ tabInicial }: Props) {
         }}
       />
       {/* Contenido sin encabezado duplicado */}
-      {tabActiva === 'devolver' && <DevolverPage ocultarEncabezado />}
-      {tabActiva === 'prestar' && (
-        <PrestarPage
-          key={personaCredencial?.id ?? 'sin-credencial'}
-          ocultarEncabezado
-          personaInicial={
-            personaCredencial
-              ? {
-                  id: personaCredencial.id,
-                  nombreCompleto: `${personaCredencial.apellidoPaterno} ${personaCredencial.apellidoMaterno ?? ''}, ${personaCredencial.nombres}`,
-                  dni: personaCredencial.dni,
-                  tipo: personaCredencial.tipoPersona,
-                }
-              : undefined
-          }
-        />
-      )}
-      {tabActiva === 'historial' && <HistorialPrestamosPage ocultarEncabezado />}
+      <section
+        ref={contenidoRef}
+        tabIndex={-1}
+        className="destino-flujo"
+        aria-label="Contenido del mostrador"
+      >
+        {tabActiva === 'devolver' && <DevolverPage ocultarEncabezado />}
+        {tabActiva === 'prestar' && (
+          <PrestarPage
+            key={personaCredencial?.id ?? 'sin-credencial'}
+            ocultarEncabezado
+            personaInicial={
+              personaCredencial
+                ? {
+                    id: personaCredencial.id,
+                    nombreCompleto: `${personaCredencial.apellidoPaterno} ${personaCredencial.apellidoMaterno ?? ''}, ${personaCredencial.nombres}`,
+                    dni: personaCredencial.dni,
+                    tipo: personaCredencial.tipoPersona,
+                  }
+                : undefined
+            }
+          />
+        )}
+        {tabActiva === 'historial' && <HistorialPrestamosPage ocultarEncabezado />}
+      </section>
     </div>
   )
 }

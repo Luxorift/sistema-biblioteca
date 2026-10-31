@@ -1,6 +1,7 @@
+import { irAlPaso } from '@/lib/guiarNavegacion'
 import { fechaBiblioteca } from '@/lib/fechas'
 import { ArrowLeft } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Alert } from '@/components/ui/Alert'
 import { Button } from '@/components/ui/Button'
@@ -17,6 +18,9 @@ interface DevolverPageProps {
 }
 
 export function DevolverPage({ ocultarEncabezado = false }: DevolverPageProps) {
+  const resultadoRef = useRef<HTMLElement>(null)
+  const mensajesRef = useRef<HTMLElement>(null)
+  const busquedaRef = useRef<HTMLElement>(null)
   const [parametros, setParametros] = useSearchParams()
   const prestamoId = parametros.get('prestamoId')
   const hoy = fechaBiblioteca()
@@ -57,15 +61,30 @@ export function DevolverPage({ ocultarEncabezado = false }: DevolverPageProps) {
       setResumen(await registrar.mutateAsync({ prestamo: seleccionado, fecha }))
       setSeleccionado(null)
       setError(null)
+      irAlPaso(resultadoRef)
     } catch {
       setError(
         'No se pudo registrar la devolución. Actualiza la página e intenta de nuevo.',
       )
       setSeleccionado(null)
+      irAlPaso(mensajesRef)
     }
   }
   if (resumen)
-    return <ResumenDevolucion devolucion={resumen} onOtra={() => setResumen(null)} />
+    return (
+      <section ref={resultadoRef} tabIndex={-1} className="destino-flujo">
+        <ResumenDevolucion
+          devolucion={resumen}
+          onOtra={() => {
+            setResumen(null)
+            const nuevos = new URLSearchParams(parametros)
+            nuevos.delete('prestamoId')
+            setParametros(nuevos, { replace: true })
+            irAlPaso(busquedaRef)
+          }}
+        />
+      </section>
+    )
   return (
     <div className="space-y-7">
       {!ocultarEncabezado && (
@@ -100,7 +119,11 @@ export function DevolverPage({ ocultarEncabezado = false }: DevolverPageProps) {
           </Button>
         </div>
       )}
-      {error && <Alert>{error}</Alert>}
+      {error && (
+        <section ref={mensajesRef} tabIndex={-1} className="destino-flujo">
+          <Alert>{error}</Alert>
+        </section>
+      )}
       {prestamos.isLoading && (
         <IndicadorCarga
           mensaje="Cargando préstamos pendientes…"
@@ -114,8 +137,17 @@ export function DevolverPage({ ocultarEncabezado = false }: DevolverPageProps) {
       )}
       {prestamos.isSuccess && (
         <>
-          <section className="border-borde space-y-4 rounded-2xl border-2 bg-white p-5">
-            <h2 className="text-2xl font-bold">Filtros</h2>
+          <section
+            ref={busquedaRef}
+            tabIndex={-1}
+            className="destino-flujo border-borde space-y-4 rounded-2xl border-2 bg-white p-5"
+            aria-label="Buscar préstamo para devolver"
+          >
+            <h2 className="text-2xl font-bold">1. Busca el préstamo</h2>
+            <p className="text-tinta-suave">
+              Busca por código, material o persona. Después pulsa Registrar devolución y
+              confirma la fecha.
+            </p>
             <div className="grid gap-4 md:grid-cols-3">
               <TextField
                 label="Material, código, persona o DNI"
@@ -212,6 +244,7 @@ export function DevolverPage({ ocultarEncabezado = false }: DevolverPageProps) {
               min={seleccionado.fechaPrestamo}
               max={hoy}
             />
+            {error && <Alert>{error}</Alert>}
             <div className="flex flex-wrap gap-3">
               <Button onClick={() => void devolver()} disabled={registrar.isPending}>
                 {registrar.isPending ? 'Guardando…' : 'Sí, registrar devolución'}

@@ -1,6 +1,7 @@
 import { ArrowLeft, RotateCcw } from 'lucide-react'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
+import { irAlPaso } from '@/lib/guiarNavegacion'
 import { useForm } from 'react-hook-form'
 import { Link } from 'react-router-dom'
 import { Alert } from '@/components/ui/Alert'
@@ -22,6 +23,10 @@ import {
 } from './usePersonas'
 
 export function PersonasPage() {
+  const registroRef = useRef<HTMLElement>(null)
+  const mensajesRef = useRef<HTMLElement>(null)
+  const resultadosRef = useRef<HTMLElement>(null)
+  const [personaRegistrada, setPersonaRegistrada] = useState<Persona | null>(null)
   const formulario = useForm<DatosFormulario>({
     resolver: zodResolver(esquemaPersona),
     defaultValues: {
@@ -66,14 +71,18 @@ export function PersonasPage() {
   const guardar = async (datos: DatosFormulario) => {
     setError(null)
     try {
-      await crearPersona.mutateAsync(datos)
+      const nuevaPersona = await crearPersona.mutateAsync(datos)
+      setPersonaRegistrada(nuevaPersona)
       setPagina(0)
       formulario.reset()
       setConfirmar(null)
+      irAlPaso(registroRef)
     } catch {
       setError(
         'No se pudo guardar. Revisa que el DNI no esté registrado e intenta de nuevo.',
       )
+      setConfirmar(null)
+      irAlPaso(mensajesRef)
     }
   }
   const guardarTipo = async () => {
@@ -114,7 +123,11 @@ export function PersonasPage() {
       >
         Imprimir credenciales de biblioteca
       </Link>
-      {error && <Alert>{error}</Alert>}
+      {error && (
+        <section ref={mensajesRef} tabIndex={-1} className="destino-flujo">
+          <Alert>{error}</Alert>
+        </section>
+      )}
       {exitoEdicion && (
         <Alert>
           Los datos de la persona se guardaron correctamente. Revisa la tabla si hace
@@ -131,6 +144,29 @@ export function PersonasPage() {
           onEnviar={setConfirmar}
         />
       </section>
+      {personaRegistrada && (
+        <section
+          ref={registroRef}
+          tabIndex={-1}
+          className="destino-flujo border-primario space-y-3 rounded-2xl border-2 bg-white p-5"
+          aria-label="Persona registrada"
+        >
+          <h2 className="text-2xl font-bold">Persona registrada correctamente</h2>
+          <p>
+            {personaRegistrada.nombres} {personaRegistrada.apellidoPaterno} ya tiene el
+            código <strong>{personaRegistrada.codigo}</strong>.
+          </p>
+          <p>
+            Siguiente paso: imprime su credencial para atenderla con el lector de códigos.
+          </p>
+          <Link
+            className="text-primario inline-flex min-h-12 items-center font-bold underline"
+            to={`/credenciales?codigo=${personaRegistrada.codigo}`}
+          >
+            Ver e imprimir su credencial
+          </Link>
+        </section>
+      )}
       <section className="border-borde space-y-5 rounded-2xl border-2 bg-white p-5">
         <h2 className="text-2xl font-bold">Buscar personas</h2>
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -188,7 +224,12 @@ export function PersonasPage() {
           Limpiar filtros
         </Button>
       </section>
-      <section className="space-y-4">
+      <section
+        ref={resultadosRef}
+        tabIndex={-1}
+        className="destino-flujo space-y-4"
+        aria-label="Resultados de personas"
+      >
         {personas.isLoading && (
           <IndicadorCarga
             mensaje="Cargando personas registradas…"
@@ -289,6 +330,7 @@ export function PersonasPage() {
         onGuardado={() => {
           setPagina(0)
           setExitoEdicion(true)
+          irAlPaso(resultadosRef)
         }}
       />
     </div>

@@ -142,3 +142,8 @@
     grid-template-columns: repeat(2, 85.6mm);
   }
 }
+
+/* Deja margen al navegar entre pasos y conserva un foco visible para teclado. */
+.destino-flujo { scroll-margin-top: 2rem; }
+.destino-flujo:focus { outline: 3px solid var(--color-foco); outline-offset: 6px; }
+@media print { .destino-flujo:focus { outline: none; } }

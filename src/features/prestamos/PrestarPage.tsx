@@ -1,14 +1,16 @@
 import { fechaBiblioteca } from '@/lib/fechas'
 import { ArrowLeft } from 'lucide-react'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useMemo, useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { useMemo, useRef, useState } from 'react'
+import { useForm, useWatch } from 'react-hook-form'
 import { Link } from 'react-router-dom'
 import { Alert } from '@/components/ui/Alert'
 import { Button } from '@/components/ui/Button'
 import { Dialog } from '@/components/ui/Dialog'
 import { IndicadorCarga } from '@/components/feedback'
 import { TextField } from '@/components/ui/TextField'
+import { PasosFlujo } from '@/components/ui/PasosFlujo'
+import { irAlPaso } from '@/lib/guiarNavegacion'
 import { FormularioPrestamo } from './components/FormularioPrestamo'
 import { ResumenPrestamo } from './components/ResumenPrestamo'
 import { esquemaPrestamo, type FormularioPrestamo as DatosFormulario } from './schemas'
@@ -33,6 +35,12 @@ export function PrestarPage({
   ocultarEncabezado = false,
   personaInicial,
 }: PrestarPageProps) {
+  const materialesRef = useRef<HTMLElement>(null)
+  const personasRef = useRef<HTMLElement>(null)
+  const copiasRef = useRef<HTMLElement>(null)
+  const fechasRef = useRef<HTMLElement>(null)
+  const resultadoRef = useRef<HTMLElement>(null)
+  const mensajesRef = useRef<HTMLElement>(null)
   const hoy = fechaBiblioteca()
   const formulario = useForm<DatosFormulario>({
     resolver: zodResolver(esquemaPrestamo),
@@ -58,6 +66,22 @@ export function PrestarPage({
   const [confirmar, setConfirmar] = useState<DatosFormulario | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [resumen, setResumen] = useState<PrestamoConfirmado | null>(null)
+  const cantidad = useWatch({ control: formulario.control, name: 'cantidad' })
+  const copiasCompletas =
+    copiasSeleccionadas.length > 0 && copiasSeleccionadas.length === cantidad
+  const pasoActual = !materialSeleccionado
+    ? 0
+    : !personaSeleccionada
+      ? 1
+      : !copiasCompletas
+        ? 2
+        : 3
+  const siguientes = [
+    'Elige el material que vas a prestar.',
+    'Elige a la persona que recibirá el material.',
+    'Indica la cantidad y elige los códigos de las copias.',
+    'Revisa las fechas y pulsa Revisar préstamo.',
+  ]
   const materialesFiltrados = useMemo(
     () =>
       (materiales.data ?? []).filter((material) =>
@@ -77,14 +101,20 @@ export function PrestarPage({
     [personas.data, filtroPersona],
   )
   const elegirMaterial = (material: MaterialPrestable) => {
+    if (materialSeleccionado?.id === material.id) {
+      irAlPaso(personaSeleccionada ? copiasRef : personasRef)
+      return
+    }
     setMaterialSeleccionado(material)
     setCopiasSeleccionadas([])
     formulario.setValue('ejemplarIds', [])
+    irAlPaso(personaSeleccionada ? copiasRef : personasRef)
   }
   const guardar = async (datos: DatosFormulario) => {
     if (!copiasSeleccionadas.length || !personaSeleccionada) {
       setError('Elige una copia y una persona antes de continuar.')
       setConfirmar(null)
+      irAlPaso(mensajesRef)
       return
     }
     setError(null)
@@ -97,11 +127,13 @@ export function PrestarPage({
         }),
       )
       setConfirmar(null)
+      irAlPaso(resultadoRef)
     } catch {
       setError(
         'No se pudo registrar el préstamo. La copia pudo haber sido prestada por otra persona. Actualiza e intenta de nuevo.',
       )
       setConfirmar(null)
+      irAlPaso(mensajesRef)
     }
   }
   const reiniciar = () => {
@@ -117,8 +149,14 @@ export function PrestarPage({
     setCopiasSeleccionadas([])
     setPersonaSeleccionada(null)
     setResumen(null)
+    irAlPaso(materialesRef)
   }
-  if (resumen) return <ResumenPrestamo prestamo={resumen} onOtro={reiniciar} />
+  if (resumen)
+    return (
+      <section ref={resultadoRef} tabIndex={-1} className="destino-flujo">
+        <ResumenPrestamo prestamo={resumen} onOtro={reiniciar} />
+      </section>
+    )
   return (
     <div className="space-y-7">
       {!ocultarEncabezado && (
@@ -138,7 +176,39 @@ export function PrestarPage({
           </Link>
         </div>
       )}
-      {error && <Alert>{error}</Alert>}
+      <PasosFlujo
+        pasoActual={pasoActual}
+        siguiente={siguientes[pasoActual]}
+        pasos={[
+          {
+            titulo: 'Material',
+            completado: Boolean(materialSeleccionado),
+            onIr: () => irAlPaso(materialesRef),
+          },
+          {
+            titulo: 'Persona',
+            completado: Boolean(personaSeleccionada),
+            onIr: () => irAlPaso(personasRef),
+          },
+          {
+            titulo: 'Copias',
+            completado: copiasCompletas,
+            habilitado: Boolean(materialSeleccionado),
+            onIr: () => irAlPaso(copiasRef),
+          },
+          {
+            titulo: 'Fechas y revisión',
+            completado: false,
+            habilitado: copiasCompletas && Boolean(personaSeleccionada),
+            onIr: () => irAlPaso(fechasRef),
+          },
+        ]}
+      />
+      {error && (
+        <section ref={mensajesRef} tabIndex={-1} className="destino-flujo">
+          <Alert>{error}</Alert>
+        </section>
+      )}
       {(materiales.isError || personas.isError) && (
         <Alert>
           No se pudieron cargar materiales o personas. Recarga la página e intenta de
@@ -152,7 +222,12 @@ export function PrestarPage({
         />
       ) : (
         <>
-          <section className="space-y-4">
+          <section
+            ref={materialesRef}
+            tabIndex={-1}
+            className="destino-flujo space-y-4"
+            aria-label="Elegir material"
+          >
             <h2 className="text-2xl font-bold">1. Materiales disponibles</h2>
             <TextField
               label="Filtrar materiales"
@@ -186,10 +261,17 @@ export function PrestarPage({
                       <td className="p-4">{material.copias.length}</td>
                       <td className="p-4">
                         <Button
-                          variante="secundario"
+                          variante={
+                            materialSeleccionado?.id === material.id
+                              ? 'primario'
+                              : 'secundario'
+                          }
+                          aria-pressed={materialSeleccionado?.id === material.id}
                           onClick={() => elegirMaterial(material)}
                         >
-                          Elegir
+                          {materialSeleccionado?.id === material.id
+                            ? 'Material elegido'
+                            : 'Elegir este material'}
                         </Button>
                       </td>
                     </tr>
@@ -197,9 +279,28 @@ export function PrestarPage({
                 </tbody>
               </table>
             </div>
+            {materialesFiltrados.length === 0 && (
+              <p role="status">
+                No hay materiales disponibles con ese filtro.{' '}
+                <Link className="text-primario font-bold underline" to="/materiales">
+                  Revisar el inventario
+                </Link>
+              </p>
+            )}
           </section>
-          <section className="space-y-4">
+          <section
+            ref={personasRef}
+            tabIndex={-1}
+            className="destino-flujo space-y-4"
+            aria-label="Elegir persona"
+          >
             <h2 className="text-2xl font-bold">2. Personas registradas</h2>
+            {materialSeleccionado && (
+              <p className="text-tinta-suave">
+                Material elegido: <strong>{materialSeleccionado.titulo}</strong>. Ahora
+                selecciona quién lo recibirá.
+              </p>
+            )}
             <TextField
               label="Filtrar personas"
               value={filtroPersona}
@@ -207,7 +308,7 @@ export function PrestarPage({
               placeholder="Nombre, DNI o tipo"
             />
             <div className="border-borde overflow-x-auto rounded-2xl border-2 bg-white">
-              <table className="w-full min-w-[800px] border-collapse text-left">
+              <table className="w-full min-w-160 border-collapse text-left">
                 <thead className="bg-papel">
                   <tr>
                     <th className="p-4">Persona</th>
@@ -224,15 +325,29 @@ export function PrestarPage({
                       <td className="p-4">{persona.tipo}</td>
                       <td className="p-4">
                         <Button
-                          variante="secundario"
+                          variante={
+                            personaSeleccionada?.id === persona.id
+                              ? 'primario'
+                              : 'secundario'
+                          }
+                          aria-pressed={personaSeleccionada?.id === persona.id}
                           onClick={() => {
                             setPersonaSeleccionada(persona)
                             formulario.setValue('personaId', persona.id, {
                               shouldValidate: true,
                             })
+                            irAlPaso(
+                              !materialSeleccionado
+                                ? materialesRef
+                                : copiasCompletas
+                                  ? fechasRef
+                                  : copiasRef,
+                            )
                           }}
                         >
-                          Elegir
+                          {personaSeleccionada?.id === persona.id
+                            ? 'Persona elegida'
+                            : 'Elegir esta persona'}
                         </Button>
                       </td>
                     </tr>
@@ -240,9 +355,30 @@ export function PrestarPage({
                 </tbody>
               </table>
             </div>
+            {personasFiltradas.length === 0 && (
+              <p role="status">
+                No se encontraron personas activas con ese dato.{' '}
+                <Link className="text-primario font-bold underline" to="/personas">
+                  Registrar o revisar personas
+                </Link>
+              </p>
+            )}
           </section>
           <section className="border-borde rounded-2xl border-2 bg-white p-5">
             <FormularioPrestamo
+              referenciaCopias={copiasRef}
+              referenciaFechas={fechasRef}
+              onInvalido={() =>
+                irAlPaso(
+                  !materialSeleccionado
+                    ? materialesRef
+                    : !personaSeleccionada
+                      ? personasRef
+                      : !copiasCompletas
+                        ? copiasRef
+                        : fechasRef,
+                )
+              }
               formulario={formulario}
               copias={materialSeleccionado?.copias ?? []}
               copiasSeleccionadas={copiasSeleccionadas}
@@ -260,15 +396,19 @@ export function PrestarPage({
                   nuevas.map((fila) => fila.id),
                   { shouldValidate: true },
                 )
+                if (!yaSeleccionada && nuevas.length === formulario.getValues('cantidad'))
+                  irAlPaso(personaSeleccionada ? fechasRef : personasRef)
               }}
               onQuitarMaterial={() => {
                 setMaterialSeleccionado(null)
                 setCopiasSeleccionadas([])
                 formulario.setValue('ejemplarIds', [], { shouldValidate: true })
+                irAlPaso(materialesRef)
               }}
               onQuitarPersona={() => {
                 setPersonaSeleccionada(null)
                 formulario.setValue('personaId', 0, { shouldValidate: true })
+                irAlPaso(personasRef)
               }}
               onEnviar={setConfirmar}
               guardando={registrar.isPending}
@@ -284,10 +424,17 @@ export function PrestarPage({
         {confirmar && (
           <div className="space-y-5">
             <p>
-              ¿Confirmas registrar el préstamo? La copia quedará marcada como prestada.
+              Vas a prestar {copiasSeleccionadas.length}{' '}
+              {copiasSeleccionadas.length === 1 ? 'copia' : 'copias'} de{' '}
+              <strong>{materialSeleccionado?.titulo}</strong> a{' '}
+              <strong>{personaSeleccionada?.nombreCompleto}</strong>. Revisa estos datos
+              antes de confirmar.
             </p>
             <div className="flex flex-wrap gap-3">
-              <Button onClick={() => void guardar(confirmar)}>
+              <Button
+                disabled={registrar.isPending}
+                onClick={() => void guardar(confirmar)}
+              >
                 Sí, registrar préstamo
               </Button>
               <Button variante="secundario" onClick={() => setConfirmar(null)}>

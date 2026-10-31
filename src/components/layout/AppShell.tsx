@@ -1,6 +1,7 @@
 import { BookOpen, LogOut } from 'lucide-react'
 import { useState } from 'react'
-import { Link, Outlet } from 'react-router-dom'
+import { Link, Outlet, useLocation } from 'react-router-dom'
+import { useEnfocarAlCambiar } from '@/lib/useEnfocarAlCambiar'
 import { BotonTema } from '@/components/ui/BotonTema'
 import { Button } from '@/components/ui/Button'
 import { Dialog } from '@/components/ui/Dialog'
@@ -9,6 +10,8 @@ import { useAuth } from '@/features/auth'
 // Marco común de las pantallas internas: barra superior limpia y contenido centrado.
 export function AppShell() {
   const { perfil, salir } = useAuth()
+  const ubicacion = useLocation()
+  const contenidoRef = useEnfocarAlCambiar(ubicacion.pathname)
   const [confirmarSalida, setConfirmarSalida] = useState(false)
 
   const primerNombre = perfil?.nombre ? perfil.nombre.split(' ')[0] : 'Bibliotecario'
@@ -19,7 +22,7 @@ export function AppShell() {
   }
 
   return (
-    <div className="min-h-dvh bg-papel text-tinta transition-colors duration-200">
+    <div className="bg-papel text-tinta min-h-dvh transition-colors duration-200">
       <a
         href="#contenido"
         className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-10 focus:rounded-lg focus:bg-white focus:p-3"
@@ -42,7 +45,7 @@ export function AppShell() {
             </Link>
 
             <div className="leading-tight">
-              <span className="block text-2xl sm:text-3xl font-bold tracking-tight text-tinta">
+              <span className="text-tinta block text-2xl font-bold tracking-tight sm:text-3xl">
                 Hola, {primerNombre}
               </span>
               <span className="text-tinta-suave block text-base sm:text-lg">
@@ -69,7 +72,12 @@ export function AppShell() {
       </header>
 
       {/* Contenido centrado y equilibrado en pantallas grandes */}
-      <main id="contenido" className="mx-auto max-w-5xl px-4 py-8">
+      <main
+        ref={contenidoRef}
+        tabIndex={-1}
+        id="contenido"
+        className="destino-flujo mx-auto max-w-5xl px-4 py-8"
+      >
         <Outlet />
       </main>
 
@@ -81,25 +89,20 @@ export function AppShell() {
       >
         <div className="space-y-6">
           <div>
-            <p className="text-2xl font-bold text-tinta">
+            <p className="text-tinta text-2xl font-bold">
               ¿Está seguro que desea cerrar sesión?
             </p>
-            <p className="text-tinta-suave text-lg mt-2">
-              Tendrá que volver a escribir su correo y contraseña para acceder nuevamente a la biblioteca.
+            <p className="text-tinta-suave mt-2 text-lg">
+              Tendrá que volver a escribir su correo y contraseña para acceder nuevamente
+              a la biblioteca.
             </p>
           </div>
 
           <div className="flex flex-wrap items-center justify-end gap-3 pt-2">
-            <Button
-              variante="secundario"
-              onClick={() => setConfirmarSalida(false)}
-            >
+            <Button variante="secundario" onClick={() => setConfirmarSalida(false)}>
               No, continuar en el sistema
             </Button>
-            <Button
-              variante="peligro"
-              onClick={ejecutarCerrarSesion}
-            >
+            <Button variante="peligro" onClick={ejecutarCerrarSesion}>
               <LogOut aria-hidden size={20} />
               Sí, cerrar sesión
             </Button>

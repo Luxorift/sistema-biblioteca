@@ -1,10 +1,10 @@
-import { useFieldArray, useWatch, type UseFormReturn } from 'react-hook-form'
+import { useFieldArray, type UseFormReturn } from 'react-hook-form'
 import { Button } from '@/components/ui/Button'
 import { Select } from '@/components/ui/Select'
 import { TextField } from '@/components/ui/TextField'
 import type { OpcionCatalogo, Ubicacion } from '@/features/catalogos'
 import type { FormularioMaterial } from '../schemas'
-import { UbicacionesCopias } from './UbicacionesCopias'
+import { CamposCopiasMaterial } from './CamposCopiasMaterial'
 
 interface FormularioMaterialProps {
   formulario: UseFormReturn<FormularioMaterial>
@@ -35,10 +35,12 @@ export function FormularioMaterial({
     formState: { errors },
   } = formulario
   const { fields, append, remove } = useFieldArray({ control, name: 'autores' })
-  const cantidad = useWatch({ control, name: 'cantidad' })
-  const ubicacionesIds = useWatch({ control, name: 'ubicacionesIds' })
   return (
     <form noValidate onSubmit={handleSubmit(onEnviar)} className="space-y-6">
+      <h2 className="text-2xl font-bold">1. Datos del material</h2>
+      <p className="text-tinta-suave">
+        Completa la ficha. Los campos marcados como opcionales pueden quedar vacíos.
+      </p>
       <TextField
         label="Título"
         className="text-xl"
@@ -125,29 +127,15 @@ export function FormularioMaterial({
           Agregar autor
         </Button>
       </fieldset>
-      <div className="grid gap-5 md:grid-cols-2">
-        <TextField
-          label="Cantidad de copias"
-          type="number"
-          min="1"
-          max="500"
-          error={errors.cantidad?.message}
-          {...register('cantidad', { setValueAs: (valor) => Number(valor) })}
-        />
-      </div>
-      <UbicacionesCopias
-        cantidad={cantidad}
-        valores={ubicacionesIds}
+      <h2 className="text-2xl font-bold">2. Copias y ubicación</h2>
+      <CamposCopiasMaterial
+        formulario={formulario}
         ubicaciones={ubicaciones}
-        onChange={(valores) =>
-          formulario.setValue('ubicacionesIds', valores, { shouldValidate: true })
-        }
-        onNuevaUbicacion={() => onNuevo('ubicacion')}
         cargando={cargandoCatalogos}
-        error={errors.ubicacionesIds?.message}
+        onNuevaUbicacion={() => onNuevo('ubicacion')}
       />
       <Button type="submit" disabled={guardando}>
-        {guardando ? 'Guardando…' : 'Guardar material y copias'}
+        {guardando ? 'Guardando…' : 'Revisar material y copias'}
       </Button>
     </form>
   )
