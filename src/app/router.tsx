@@ -74,6 +74,14 @@ export const router = createBrowserRouter([
 
           // Otros módulos del sistema
           {
+            path: 'datos',
+            lazy: async () => {
+              const { IntercambioDatosPage } =
+                await import('@/features/intercambio-datos')
+              return { Component: IntercambioDatosPage }
+            },
+          },
+          {
             path: 'credenciales',
             lazy: async () => {
               const { CredencialesPage } =

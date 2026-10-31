@@ -25,8 +25,9 @@ Al abrir la carpeta en VS Code acepta instalar las extensiones recomendadas
 1. En Supabase abre **SQL Editor** y ejecuta `supabase/migrations/20261007000000_esquema_inicial.sql`.
 2. Ejecuta después `supabase/migrations/20261031000000_consistencia_biblioteca.sql`.
 3. Ejecuta `supabase/migrations/20261031010000_ubicaciones_copias.sql` para exigir y asignar ubicaciones al crear copias.
-4. Crea tu usuario en **Authentication > Users** y copia su UUID.
-5. Dale un perfil (sin perfil activo, la seguridad de la base bloquea todo):
+4. Ejecuta `supabase/migrations/20261031020000_importacion_exportacion_excel.sql` para habilitar el intercambio de datos.
+5. Crea tu usuario en **Authentication > Users** y copia su UUID.
+6. Dale un perfil (sin perfil activo, la seguridad de la base bloquea todo):
 
 ```sql
 insert into public.perfiles (id, nombre, rol)
@@ -154,7 +155,7 @@ migraciones porque no incluye todas las funciones, políticas ni triggers.
 Requisitos para las pruebas: Node.js 22.18+ (recomendado Node.js 24 LTS).
 Ejecuta `npm test`, `npm run lint` y `npm run build`.
 
-Las pruebas SQL ejecutan las tres migraciones completas en PostgreSQL embebido
+Las pruebas SQL ejecutan las cuatro migraciones completas en PostgreSQL embebido
 (PGlite), incluidas las extensiones `unaccent` y `pg_trgm`. Simulan el esquema
 mínimo de Auth y el rol `authenticated`; comprueban RLS, rollback, estados,
 préstamos, devoluciones y búsqueda paginada sin acceder al Supabase remoto.
@@ -265,3 +266,46 @@ un botón **Ver vista previa** para revisar las tarjetas antes de imprimirlas.
 
 Las confirmaciones de préstamos y devoluciones se mantienen. Al terminar, se
 muestra el resultado y se puede iniciar otra operación desde el paso apropiado.
+
+## 15. Importar y exportar Excel
+
+En Inicio o Materiales, abre **Importar y exportar Excel** (`/datos`). Requiere un
+perfil activo de administrador o bibliotecario. En bases existentes, aplica primero
+la migración `20261031020000_importacion_exportacion_excel.sql`, después de las
+anteriores; conserva los datos existentes.
+
+### Importación revisada
+
+1. Selecciona un `.xlsx` (hasta 10 MB y 5.000 filas). El sistema detecta las
+   cabeceras aunque estén desplazadas. Revisa las columnas, las hojas incluidas,
+   el tipo de material y la categoría propuesta para cada hoja.
+2. Revisa los nombres parecidos de autores, editoriales, tipos, categorías y
+   ubicaciones. Puedes escoger un nombre, escribir otro o mantener separados los
+   nombres distintos. Las decisiones se recuerdan para futuras importaciones.
+3. Corrige las filas pendientes, especialmente cantidades, años ambiguos y
+   ubicaciones. Cada copia requiere estante y nivel. Puedes omitir una fila.
+4. Revisa las coincidencias: confirma si las filas repetidas representan cantidades
+   adicionales y si deseas añadir copias a materiales existentes. No se reemplazan
+   sus metadatos. Confirma el resumen para guardar.
+
+La importación completa se guarda en una transacción: un error revierte también
+las fichas, catálogos y copias nuevas. Se registra la hoja, fila y valores originales
+para poder rastrear cada lote. El hash del archivo evita importarlo dos veces,
+incluso si cambia su nombre. Si omites hojas o filas y confirmas, ese archivo queda
+marcado como importado: prepara un archivo nuevo con los registros restantes.
+
+No se ejecutan fórmulas del archivo; solo se lee su resultado guardado. La librería
+Excel se carga cuando se necesita leer o exportar, sin aumentar la carga inicial.
+
+### Exportación
+
+**Exportar biblioteca a Excel** descarga un archivo con materiales, ejemplares y
+ubicaciones, todas las personas y alumnos, préstamos y devoluciones, catálogos,
+equivalencias e historial de importaciones. Incluye registros inactivos y todas las
+filas, sin el límite de las tablas paginadas. Un administrador puede incluir además
+los perfiles y roles del personal; nunca se exportan contraseñas ni claves.
+
+Los DNI y códigos se mantienen como texto para conservar ceros iniciales. Las
+fechas se muestran en horario de Lima. Las hojas tienen cabeceras, filtros y la
+primera fila inmovilizada. El archivo es para consulta y gestión, no sustituye un
+respaldo completo de PostgreSQL ni restaura automáticamente toda la biblioteca.
